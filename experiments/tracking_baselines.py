@@ -33,6 +33,38 @@ def _compute_new_times(year, month, day, hour, delta_t):
 
 	return year, month, time, rot_ind_time
 
+def policy_from_simple_tracker(state, epsilon=0.01):
+	'''
+	Args:
+		state (SolarOOMDP state): contains the year, month, hour etc.
+
+	Returns:
+		(str): Action in the set SolarOOMDPClass.ACTIONS
+	'''
+
+	# Get relevant data.
+	year, month, hour, day, = 2020, 10, 6, 1 #state.get_year(), state.get_month(), state.get_hour(), state.get_day()
+	delta_t, longitude, latitude = 1, 40, 20 #state.get_delta_t(), state.get_longitude(), state.get_latitude()
+
+	# Use tracker to compute sun vector.
+	alpha, delta, H = simple_tracker(year, month, hour, day, delta_t, longitude, latitude)
+	sun_vector = math.cos(alpha), math.sin(alpha) + math.cos(alpha), math.sin(delta)
+
+	# Compute difference between panel vector and sun vector
+	panel_vector = (0.2, 0.7, 0.1) #state.get_panel_normal_vector()
+	vector_diff = (panel_vector[0] - sun_vector[0], panel_vector[1] - sun_vector[1], panel_vector[2] - sun_vector[2])
+
+	# This will be more sophisticated.
+	if vector_diff < epsilon:
+		return "doNothing"
+	elif panel_vector > sun_vector:
+		return "panelForward"
+	else:
+		return "panelBack"
+
+
+def grena_tracker(year, month, hour, day, delta_t, longitude, latitude):
+	pass
 
 def simple_tracker(year, month, hour, day, delta_t, longitude, latitude):
 	'''
@@ -59,19 +91,22 @@ def simple_tracker(year, month, hour, day, delta_t, longitude, latitude):
 
 	angular_freq = 0.017202786 * day**(-1)
 
+	# Global Coordinate: Alpha
 	right_asc = -1.3888 + 1.7202792 * 10**(-2)*rot_ind_time \
 		+ 3.199 * 10**(-2) * math.sin(angular_freq * rot_ind_time) \
 		- 2.65 * 10**(-3) * math.cos(angular_freq * rot_ind_time) \
 		+ 4.050 * 10**(-2) * math.sin(2 * angular_freq * rot_ind_time) \
 		+ 1.525 * 10**(-2) * math.cos(2 * angular_freq * rot_ind_time)
 
+	# Global Coordinate: Delta
 	declination = 6.57 * 10**(-3) + 7.347 * 10**(-2) * math.sin(angular_freq * rot_ind_time) \
 	 	-3.9919 * 10**(-1) * math.cos(angular_freq * rot_ind_time) + 7.3 * 10 ** (-4) * math.sin(2 * angular_freq * rot_ind_time) \
 	 	- 6.60 * 10**(-3) * math.cos(2 * angular_freq * rot_ind_time)
 
+	# Local Coordinate: H
 	hour_angle = 1.75283 + 6.3003881 * time + longitude - right_asc
 
-	print "right_Asc", right_asc, "declination", declination, "hour_angle", hour_angle
+	return right_asc, declination, hour_angle
 
 
 def main():

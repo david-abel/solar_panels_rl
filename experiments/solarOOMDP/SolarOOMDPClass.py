@@ -1,20 +1,15 @@
 '''
 SolarOOMDPClass.py: Contains the SolarOOMDP class. 
 
-From:
-    Dietterich, Thomas G. "Hierarchical reinforcement learning with the
-    MAXQ value function decomposition." J. Artif. Intell. Res.(JAIR) 13
-    (2000): 227-303.
-
-Author: David Abel (cs.brown.edu/~dabel/)
+Author: Emily Reif
 '''
 
 # simple_rl imports.
-from ...mdp.oomdp.OOMDPClass import OOMDP
-from ...mdp.oomdp.OOMDPObjectClass import OOMDPObject
+from simple_rl.mdp.oomdp.OOMDPClass import OOMDP
+from simple_rl.mdp.oomdp.OOMDPObjectClass import OOMDPObject
 from SolarOOMDPStateClass import SolarOOMDPState
 import math
-from Pysolar import solar, radiation
+from pysolar import solar, radiation
 import datetime
 
 class SolarOOMDP(OOMDP):
@@ -132,6 +127,7 @@ class SolarOOMDP(OOMDP):
         
     def __str__(self):
         return "solarmdp_" + "p-" + str(self.step_panel)
+
 def _error_check(state, action):
     '''
     Args:
