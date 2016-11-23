@@ -10,7 +10,7 @@ import time, argparse, os, sys, copy
 from collections import defaultdict
 
 # simple_rl imports.
-from simple_rl.utils.run_experiments import run_agents_on_mdp
+from simple_rl.run_experiments import run_agents_on_mdp
 from simple_rl.experiments import Experiment
 from simple_rl.agents import RandomAgent, FixedPolicyAgent, QLearnerAgent, LinearApproxQLearnerAgent
 
@@ -33,11 +33,10 @@ def main():
     qlearner_agent = QLearnerAgent(actions, gamma=gamma, explore="uniform")
     lin_approx_agent = LinearApproxQLearnerAgent(actions, gamma=gamma)
 
-    agents = [baseline_tracker, qlearner_agent, random_agent]
+    agents = [qlearner_agent, random_agent]
     
-
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=3)
 
 if __name__ == "__main__":
     main()
