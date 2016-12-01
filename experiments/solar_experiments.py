@@ -26,14 +26,14 @@ def main():
 
     # Setup fixed agents.
     baseline_policy = tb.policy_from_simple_tracker
-    baseline_tracker = FixedPolicyAgent(baseline_policy)
+    baseline_tracker_agent = FixedPolicyAgent(baseline_policy)
 
     # Setup RL agents.
     random_agent = RandomAgent(actions)
     qlearner_agent = QLearnerAgent(actions, gamma=gamma, explore="uniform")
     lin_approx_agent = LinearApproxQLearnerAgent(actions, gamma=gamma)
 
-    agents = [qlearner_agent, random_agent]
+    agents = [qlearner_agent, random_agent, baseline_tracker_agent]
     
     # Run experiments.
     run_agents_on_mdp(agents, solar_mdp, num_instances=3)
