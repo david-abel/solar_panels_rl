@@ -36,7 +36,7 @@ def main():
     agents = [qlearner_agent, random_agent]
     
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=3)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=3, num_episodes=500, num_steps=80)
 
 if __name__ == "__main__":
     main()
