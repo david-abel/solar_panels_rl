@@ -33,10 +33,10 @@ def main():
     qlearner_agent = QLearnerAgent(actions, gamma=gamma, explore="uniform")
     lin_approx_agent = LinearApproxQLearnerAgent(actions, gamma=gamma)
 
-    agents = [qlearner_agent, random_agent]
+    agents = [lin_approx_agent, random_agent]
     
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=3, num_episodes=500, num_steps=80)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=3, num_episodes=200, num_steps=100)
 
 if __name__ == "__main__":
     main()
