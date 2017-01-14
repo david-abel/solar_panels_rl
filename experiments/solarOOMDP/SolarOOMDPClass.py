@@ -9,7 +9,7 @@ from simple_rl.mdp.oomdp.OOMDPClass import OOMDP
 from simple_rl.mdp.oomdp.OOMDPObjectClass import OOMDPObject
 from SolarOOMDPStateClass import SolarOOMDPState
 import math
-from Pysolar import solar, radiation
+from pysolar import solar, radiation
 import datetime
 
 class SolarOOMDP(OOMDP):
@@ -70,14 +70,18 @@ class SolarOOMDP(OOMDP):
             # Finally, the new altitude is the ground's altitude with the addition of the panel's
             altitude_deg_with_panel = altitude_deg + math.degrees(state.get_panel_angle_ALT() * math.cos(azimuth_panel_offset))
 
-            reward = GetRadiationDirect(self.time, altitude_deg_with_panel)/1000.0
-            # print
-            # print state.get_hour()
-            # print "original altitude ", altitude_deg
-            # print "panel angle az ", state.get_panel_angle_AZ()
-            # print "panel angle alt ", state.get_panel_angle_ALT()
-            # print "alt with panel ", altitude_deg_with_panel
-            # print " REWARD ", reward
+            # Bound the altitude.
+            altitude_deg_with_panel = min(170, max(-170.0, altitude_deg_with_panel))
+            reward = _get_radiation_direct(self.time, altitude_deg_with_panel)/1000.0
+
+            # Debug check.
+            if reward < 0 or reward > 50:
+                print "Warning: reward reaching unlikely values (", r, ")"
+                print state.get_hour()
+                print "original altitude ", altitude_deg
+                print "panel angle az ", state.get_panel_angle_AZ()
+                print "panel angle alt ", state.get_panel_angle_ALT()
+                print "alt with panel ", altitude_deg_with_panel
 
         if ((action != "doNothing")):
             reward -= .1
@@ -188,7 +192,7 @@ def _error_check(state, action):
 
 
 # DIRECTLY FROM PYSOLAR (with different conditional)
-def GetRadiationDirect(utc_datetime, altitude_deg):
+def _get_radiation_direct(utc_datetime, altitude_deg):
     # from Masters, p. 412
     if(altitude_deg > 5 and altitude_deg < 175):
         day = solar.GetDayOfYear(utc_datetime)

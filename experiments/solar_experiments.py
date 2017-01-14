@@ -40,7 +40,7 @@ def main():
     agents = [lin_approx_agent, static_agent, random_agent]
     
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=3, num_episodes=1, num_steps=24*6*5)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=5, num_episodes=1, num_steps=24*6*25)
 
 if __name__ == "__main__":
     main()

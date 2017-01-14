@@ -33,35 +33,51 @@ def _compute_new_times(year, month, day, hour, delta_t):
 
 	return year, month, time, rot_ind_time
 
-def policy_from_simple_tracker(state, epsilon=0.01):
+def static_policy(state):
+	return "doNothing"
+
+
+def policy_from_tracker(state, tracker):
 	'''
 	Args:
 		state (SolarOOMDP state): contains the year, month, hour etc.
+		tracker (lambda: {year, time ...} --> azimuth, altitude)
 
 	Returns:
 		(str): Action in the set SolarOOMDPClass.ACTIONS
 	'''
 
 	# Get relevant data.
-	year, month, hour, day, = 2020, 10, 6, 1 #state.get_year(), state.get_month(), state.get_hour(), state.get_day()
-	delta_t, longitude, latitude = 1, 40, 20 #state.get_delta_t(), state.get_longitude(), state.get_latitude()
+	year, month, hour, day, = state.get_year(), state.get_month(), state.get_hour(), state.get_day()
+	delta_t, longitude, latitude = state.get_delta_t(), state.get_longitude(), state.get_latitude()
 
 	# Use tracker to compute sun vector.
-	alpha, delta, H = simple_tracker(year, month, hour, day, delta_t, longitude, latitude)
-	sun_vector = math.cos(alpha), math.sin(alpha) + math.cos(alpha), math.sin(delta)
+	azimuth, altitude = tracker(year, month, hour, day, delta_t, longitude, latitude)
+	sun_vector = math.sin(azimuth), math.cos(azimuth), math.sin(altitude)
 
 	# Compute difference between panel vector and sun vector
-	panel_vector = (0.2, 0.7, 0.1) #state.get_panel_normal_vector()
-	vector_diff = (panel_vector[0] - sun_vector[0], panel_vector[1] - sun_vector[1], panel_vector[2] - sun_vector[2])
+	panel_vector = math.sin(math.radians(state.get_panel_angle_NS)), math.cos(math.radians(state.get_panel_angle_NS)), math.cos(math.radians(state.get_panel_angle_EW()))
+
+	biggest_diff = 0
+	biggest_index = 0
+	for i in range(len(sun_vector)):
+		delta = abs(sun_vector[i] - panel_vector[i])
+		if delta > biggest_diff:
+			biggest_index = i
+			biggest_diff = delta
 
 	# This will be more sophisticated.
-	if vector_diff < epsilon:
+	if biggest_diff <= 5:
 		return "doNothing"
-	elif panel_vector > sun_vector:
-		return "panelForward"
+	elif biggest_index == 0 and sun_vector[0] - panel_vector[0] > 0:
+		return "panelForwardNS"
+	elif biggest_index == 0 and panel_vector[0] - sun_vector[0] >= 0:
+		return "panelBackNS"
 	else:
-		return "panelBack"
+		return "panelForward"
 
+
+["panelForwardNS", "panelBackNS", "panelForwardEW", "panelBackEW", "doNothing"]
 
 def grena_tracker(year, month, hour, day, delta_t, longitude, latitude):
 	pass
@@ -107,6 +123,9 @@ def simple_tracker(year, month, hour, day, delta_t, longitude, latitude):
 	hour_angle = 1.75283 + 6.3003881 * time + longitude - right_asc
 
 	return right_asc, declination, hour_angle
+
+def bad_tracker(year, month, hour, day, delta_t, longitude, latitude):
+	return 0.0, 0.0
 
 
 def main():
