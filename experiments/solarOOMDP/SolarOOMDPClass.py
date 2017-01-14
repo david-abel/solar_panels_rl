@@ -16,12 +16,14 @@ class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
 
     # Static constants.
-    ACTIONS = ["panelForwardNS", "panelBackNS", "panelForwardEW", "panelBackEW", "doNothing"]
-    ATTRIBUTES = ["angle_NS", "angle_EW", "month", "day", "hour", "minute", "latitude", "longitude"]
+    ACTIONS = ["panelForwardAZ", "panelBackAZ", "panelForwardALT", "panelBackALT", "doNothing"]
+
+    # give altitiude and azimuth
+    ATTRIBUTES = ["angle_AZ", "angle_ALT", "month", "day", "hour", "minute", "latitude", "longitude"]
     CLASSES = ["agent", "time", "worldPosition"]
 
     #timestep is in minutes, for now
-    def __init__(self, timestep=30, panel_step=20, panel_start_angle=0, year=2016, month=11, day=4, hour=0, minute=0, latitude_deg = 42.3, longitude_deg = -71.4):
+    def __init__(self, timestep=30, panel_step=.1, panel_start_angle=0, year=2016, month=11, day=4, hour=0, minute=0, latitude_deg = 42.3, longitude_deg = -71.4):
         self.time = datetime.datetime(year, month, day, hour, minute)
         init_state = self._create_state(0.0, 0.0, self.time, longitude_deg, latitude_deg)
         OOMDP.__init__(self, SolarOOMDP.ACTIONS, self.objects, self._transition_func, self._reward_func, init_state=init_state)
@@ -43,42 +45,42 @@ class SolarOOMDP(OOMDP):
         '''
 
         # Need to update altitude_deg to take into account our panel's rotation.
-        # However, we can only control rotation over the NS/EW axes.
-        # So, decompose current altitude_deg into NS/EW components using azimuth_deg.
+        # However, we can only control rotation over the ROT/UD axes.
+        # So, decompose current altitude_deg into ROT/EW components using azimuth_deg.
         # Then, add panel offset, and translate back.
 
         # Both altitude_deg and azimuth_deg are in degrees.
         altitude_deg = solar.GetAltitudeFast(self.latitude_deg, self.longitude_deg, self.time)
         azimuth_deg = solar.GetAzimuth(self.latitude_deg, self.longitude_deg, self.time)
-        # print 
-        # print "time ", state.get_time()
-        # print "original altitude ", altitude_deg
-        # print "panel angle NS ", state.get_panel_angle_NS()
-        # print "panel angle EW ", state.get_panel_angle_EW()
+
         # First, if the altitude is less than 0 (the sun is below the horizon), return 0.
         if (altitude_deg < 0):
             reward = 0.0
         else:
+            # The panel has two rotation offsets (rotation around the normal to the ground), and rotation around its own axis.
+            # Hopefully, it would learn to just make its normal rotation match that ground-truth azimuth angle,
+            # and make its other rotation equal 90 - altitude_deg.
+
             # Translate to radians.
             azimuth_rad = math.cos(math.radians(azimuth_deg))
 
-            # Will sum to altitude_deg.
-            NS_component_of_altitude_deg = math.cos(azimuth_rad) * altitude_deg
-            EW_component_of_altitude_deg = math.sin(azimuth_rad) * altitude_deg
+            # The difference between how we SHOULD have rotated the panel, and how we did.
+            azimuth_panel_offset = azimuth_rad - state.get_panel_angle_AZ()
 
-            # Add rotation from panel.
-            NS_component_of_altitude_deg += math.cos(azimuth_rad) * state.get_panel_angle_NS()
-            EW_component_of_altitude_deg += math.sin(azimuth_rad) * state.get_panel_angle_EW()
+            # Finally, the new altitude is the ground's altitude with the addition of the panel's
+            altitude_deg_with_panel = altitude_deg + math.degrees(state.get_panel_angle_ALT() * math.cos(azimuth_panel_offset))
 
-            altitude_deg_with_panel = NS_component_of_altitude_deg + EW_component_of_altitude_deg
-            # print "altitude final ", altitude_deg_with_panel
-            reward = GetRadiationDirect(self.time, altitude_deg_with_panel)/100.0
+            reward = GetRadiationDirect(self.time, altitude_deg_with_panel)/1000.0
+            # print
+            # print state.get_hour()
+            # print "original altitude ", altitude_deg
+            # print "panel angle az ", state.get_panel_angle_AZ()
+            # print "panel angle alt ", state.get_panel_angle_ALT()
+            # print "alt with panel ", altitude_deg_with_panel
+            # print " REWARD ", reward
 
-        # print " REWARD ", reward
-
-        # Add penalty for moving at all
         if ((action != "doNothing")):
-            reward -= 1
+            reward -= .1
         return reward
 
     def _transition_func(self, state, action):
@@ -93,40 +95,40 @@ class SolarOOMDP(OOMDP):
         _error_check(state, action)
         self.time += datetime.timedelta(minutes=self.timestep)
         time = self.time
-        state_angle_NS = 0
-        state_angle_NS += state.get_panel_angle_NS()
-        state_angle_EW = 0
-        state_angle_EW += state.get_panel_angle_EW()
+        state_angle_AZ = 0
+        state_angle_AZ += state.get_panel_angle_AZ()
+        state_angle_ALT = 0
+        state_angle_ALT+= state.get_panel_angle_ALT()
 
         # If we move the panel forward, increment panel angle by one step
-        if action == "panelForwardNS":
-            new_panel_angleNS = min(state_angle_NS + self.step_panel, 90.0)
-            return self._create_state(new_panel_angleNS, state_angle_EW, time, self.longitude_deg, self.latitude_deg)
+        if action == "panelForwardAZ":
+            new_panel_angleAZ = state_angle_AZ + self.step_panel
+            return self._create_state(new_panel_angleAZ, state_angle_ALT, time, self.longitude_deg, self.latitude_deg)
 
         # If we move the panel back, decrement panel angle by one step
-        elif action == "panelBackNS":
-            new_panel_angleNS = max(state_angle_NS - self.step_panel, -90)
-            return self._create_state(new_panel_angleNS, state_angle_EW, time, self.longitude_deg, self.latitude_deg)
+        elif action == "panelBackAZ":
+            new_panel_angleAZ = state_angle_AZ - self.step_panel
+            return self._create_state(new_panel_angleAZ, state_angle_ALT, time, self.longitude_deg, self.latitude_deg)
 
         # If we move the panel forward, increment panel angle by one step
-        if action == "panelForwardEW":
-            new_panel_angleEW = min(state_angle_EW + self.step_panel, 90.0)
-            return self._create_state(state_angle_NS, new_panel_angleEW, time, self.longitude_deg, self.latitude_deg)
+        if action == "panelForwardALT":
+            new_panel_angle_ALT = state_angle_ALT + self.step_panel
+            return self._create_state(state_angle_AZ, new_panel_angle_ALT, time, self.longitude_deg, self.latitude_deg)
 
         # If we move the panel back, decrement panel angle by one step
-        elif action == "panelBackEW":
-            new_panel_angleEW = max(state_angle_EW - self.step_panel, -90)
-            return self._create_state(state_angle_NS, new_panel_angleEW, time, self.longitude_deg, self.latitude_deg)
+        elif action == "panelBackALT":
+            new_panel_angle_ALT = state_angle_ALT - self.step_panel
+            return self._create_state(state_angle_AZ, new_panel_angle_ALT, time, self.longitude_deg, self.latitude_deg)
 
         # If we do nothing, none of the angles change
         elif action == "doNothing":
-            return self._create_state(state_angle_NS, state_angle_EW, time, self.longitude_deg, self.latitude_deg)
+            return self._create_state(state_angle_AZ, state_angle_ALT, time, self.longitude_deg, self.latitude_deg)
 
         else:
             print "Error: Unrecognized action! (" + action + ")"
             quit()
 
-    def _create_state(self, panel_angle_NS, panel_angle_EW, t, lon, lat):
+    def _create_state(self, panel_angle_AZ, panel_angle_ALT, t, lon, lat):
         '''
         Args:
             sun_angle (int)
@@ -140,8 +142,8 @@ class SolarOOMDP(OOMDP):
 
         # Make agent.
         agent_attributes = {}
-        agent_attributes["angle_NS"] = panel_angle_NS
-        agent_attributes["angle_EW"] = panel_angle_EW
+        agent_attributes["angle_AZ"] = panel_angle_AZ
+        agent_attributes["angle_ALT"] = panel_angle_ALT
         agent = OOMDPObject(attributes=agent_attributes, name="agent")
         self.objects["agent"].append(agent)
 
@@ -185,10 +187,10 @@ def _error_check(state, action):
         quit()
 
 
-# DIRECTLY FROM PYSOLAR-- FIX
+# DIRECTLY FROM PYSOLAR (with different conditional)
 def GetRadiationDirect(utc_datetime, altitude_deg):
     # from Masters, p. 412
-    if(altitude_deg > 0):
+    if(altitude_deg > 5 and altitude_deg < 175):
         day = solar.GetDayOfYear(utc_datetime)
         flux = radiation.GetApparentExtraterrestrialFlux(day)
         optical_depth = radiation.GetOpticalDepth(day)

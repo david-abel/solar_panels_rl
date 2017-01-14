@@ -20,8 +20,6 @@ from SolarTrackerClass import SolarTracker
 import tracking_baselines as tb
 
 def main():
-
-
     # Setup MDP.
     panel_step = 1
     solar_mdp = SolarOOMDP(timestep=5, panel_step=panel_step)
@@ -35,12 +33,10 @@ def main():
     # Setup fixed agents.
     static_agent = FixedPolicyAgent(tb.static_policy)
 
-
     # Setup RL agents.
     random_agent = RandomAgent(actions)
     qlearner_agent = QLearnerAgent(actions, gamma=gamma, explore="uniform")
     lin_approx_agent = LinearApproxQLearnerAgent(actions, gamma=gamma, rbf=True)
-
     agents = [lin_approx_agent, static_agent, random_agent]
     
     # Run experiments.
