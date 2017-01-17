@@ -20,12 +20,12 @@ class SolarOOMDP(OOMDP):
 
     # give altitiude and azimuth
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "month", "day", "hour", "minute", "latitude", "longitude"]
-    CLASSES = ["agent", "time", "worldPosition"]
+    CLASSES = ["agent", "sun", "time", "worldPosition"]
 
     #timestep is in minutes, for now
     def __init__(self, timestep=30, panel_step=.1, panel_start_angle=0, year=2016, month=11, day=4, hour=0, minute=0, latitude_deg = 42.3, longitude_deg = -71.4):
         self.time = datetime.datetime(year, month, day, hour, minute)
-        init_state = self._create_state(0.0, 0.0, self.time, longitude_deg, latitude_deg)
+        init_state = self._create_state(90.0, 90.0, self.time, longitude_deg, latitude_deg)
         OOMDP.__init__(self, SolarOOMDP.ACTIONS, self.objects, self._transition_func, self._reward_func, init_state=init_state)
 
         # Global information
@@ -70,21 +70,21 @@ class SolarOOMDP(OOMDP):
             # Finally, the new altitude is the ground's altitude with the addition of the panel's
             altitude_deg_with_panel = altitude_deg + math.degrees(state.get_panel_angle_ALT() * math.cos(azimuth_panel_offset))
 
-            # Bound the altitude.
-            altitude_deg_with_panel = min(170, max(-170.0, altitude_deg_with_panel))
+            # Compute energy.
+            # altitude_deg_with_panel = min(170, max(-170.0, altitude_deg_with_panel))
             reward = _get_radiation_direct(self.time, altitude_deg_with_panel)/1000.0
 
             # Debug check.
             if reward < 0 or reward > 50:
                 print "Warning: reward reaching unlikely values (", r, ")"
-                print state.get_hour()
-                print "original altitude ", altitude_deg
-                print "panel angle az ", state.get_panel_angle_AZ()
-                print "panel angle alt ", state.get_panel_angle_ALT()
-                print "alt with panel ", altitude_deg_with_panel
+                # print state.get_hour()
+                # print "original altitude ", altitude_deg
+                # print "panel angle az ", state.get_panel_angle_AZ()
+                # print "panel angle alt ", state.get_panel_angle_ALT()
+                # print "alt with panel ", altitude_deg_with_panel
 
         if ((action != "doNothing")):
-            reward -= .1
+            reward -= .01
         return reward
 
     def _transition_func(self, state, action):
@@ -136,7 +136,8 @@ class SolarOOMDP(OOMDP):
         '''
         Args:
             sun_angle (int)
-            panel_angle (int)
+            panel_angle_AZ (int)
+            panel_angle_ALT (int)
 
         Returns:
             (OOMDP State)
@@ -150,6 +151,15 @@ class SolarOOMDP(OOMDP):
         agent_attributes["angle_ALT"] = panel_angle_ALT
         agent = OOMDPObject(attributes=agent_attributes, name="agent")
         self.objects["agent"].append(agent)
+
+        # Sun.
+        sun_attributes = {}
+        sun_angle_AZ = solar.GetAzimuth(lat, lon, t)
+        sun_angle_ALT = solar.GetAltitudeFast(lat, lon, t)
+        sun_attributes["angle_AZ"] = sun_angle_AZ
+        sun_attributes["angle_ALT"] = sun_angle_ALT
+        sun = OOMDPObject(attributes=sun_attributes, name="sun")
+        self.objects["sun"].append(sun)
 
         # Time.
         time_attributes = {}
@@ -194,7 +204,7 @@ def _error_check(state, action):
 # DIRECTLY FROM PYSOLAR (with different conditional)
 def _get_radiation_direct(utc_datetime, altitude_deg):
     # from Masters, p. 412
-    if(altitude_deg > 5 and altitude_deg < 175):
+    if 5 < altitude_deg < 175:
         day = solar.GetDayOfYear(utc_datetime)
         flux = radiation.GetApparentExtraterrestrialFlux(day)
         optical_depth = radiation.GetOpticalDepth(day)

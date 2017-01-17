@@ -32,15 +32,15 @@ def main():
 
     # Setup fixed agents.
     static_agent = FixedPolicyAgent(tb.static_policy)
+    random_agent = RandomAgent(actions)
 
     # Setup RL agents.
-    random_agent = RandomAgent(actions)
-    qlearner_agent = QLearnerAgent(actions, gamma=gamma, explore="uniform")
     lin_approx_agent = LinearApproxQLearnerAgent(actions, gamma=gamma, rbf=True)
+
     agents = [lin_approx_agent, static_agent, random_agent]
-    
+
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=5, num_episodes=1, num_steps=24*6*25)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=10, num_episodes=1, num_steps=24*6*1000)
 
 if __name__ == "__main__":
     main()

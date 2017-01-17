@@ -1,0 +1,10 @@
+(MDP)
+	solarmdp_p-1
+(Agents)
+	lin_q_approx-uniform
+	fixed-policy
+	random
+(Params)
+	num_instances : 10
+	num_episodes : 1
+	num_steps : 144000
