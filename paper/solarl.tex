@@ -45,9 +45,9 @@ Providence, RI 02912 \\
 % -----------------
 \begin{abstract}
 Solar panels are a sustainable means of harvesting energy from the sun. A primary factor dictating the effectiveness of a panel is the angle of incidence to solar irradiance; typically, photovoltaic cells pointed directly at the sun harvest substantially more energy than those pointed away from the sun. To maximize energy, solar panels are often equipped with a tracking system that accurately computes of the sun's relative location throughout the day, regardless of the panel's location on Earth. Based on the systems estimate of the sun's location, a controller moves the panel along one or two axes to minimize angle of incidence, increasing energy harvested. Prior work has developed efficient algorithms for computing the sun's location based on the longitude and latitude of the system, the current temperature, time of day, altitude, local atmospheric pressure, among other quantities.
-
+%
 However, these approaches do not account for changes in the local climate, current weather conditions (such as cloud coverage), or atmospheric composition which can be contributing factors to the total energy harvested by a solar panel.
-
+%
 In this work, we use the computational learning paradigm of Reinforcement Learning to optimize solar panel performance, measured in terms of the total amount of AC energy harvested in a 24 hour cycle by an end to end solar system. We advocate for the use of Reinforcement Learning for the Solar Tracking problem due to its {\it effectiveness}, {\it negligible cost}, {\it lack of dependence on extra components} (such as a thermometer, barometer, or a GPS), and {\it versatility}. Our contribution is twofold: (1) the adaptation of a state of the art RL algorithm, \textsc{SolaRL} to the problem of optimizing the total energy harvested by solar panels, and (2) the creation of an open source simulation platform for solar tracking experimentation. We evaluate the utility of our algorithm compared to baselines in our simulated environment across different time scales and in different places on Earth.
 \end{abstract}
 
