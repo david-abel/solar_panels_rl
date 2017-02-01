@@ -3,7 +3,7 @@
 % --- Packages ---
 \usepackage{rldm}
 %\usepackage[usenames, dvipsnames]{color} % Cool colors
-\usepackage{enumerate, amsmath, amsthm, verbatim, amssymb, dashrule, tikz, bbm, booktabs, bm}
+\usepackage{enumerate, amsmath, hyperref, amsthm, verbatim, amssymb, dashrule, tikz, bbm, booktabs, bm}
 \usepackage[framemethod=TikZ]{mdframed}
 \usepackage[numbers]{natbib}
 
@@ -44,22 +44,26 @@ Providence, RI 02912 \\
 % -- Abstract --
 % -----------------
 \begin{abstract}
-Solar panels are a sustainable means of harvesting energy from the sun. A primary factor dictating the effectiveness of a panel is the angle of incidence to solar irradiance; typically, photovoltaic cells pointed directly at the sun harvest substantially more energy than those pointed away from the sun. To maximize energy, solar panels are often equipped with a tracking system that accurately computes of the sun's relative location throughout the day, regardless of the panel's location on Earth. Based on the systems estimate of the sun's location, a controller moves the panel along one or two axes to minimize angle of incidence, increasing energy harvested. Prior work has developed efficient algorithms for computing the sun's location based on the longitude and latitude of the system, the current temperature, time of day, altitude, local atmospheric pressure, among other quantities.
+Solar panels sustainably harvest energy from the sun. Typically, photovoltaic cells pointed directly at the sun harvest substantially more energy than those pointed away from the sun. To maximize energy solar panels are often equipped with tracker that computes of the sun's relative location throughout the day, regardless of the systems location on Earth. Based on the tracker's estimate of the sun's location, a controller moves the panel along one or two axes to minimize angle of incidence, increasing the energy harvested. Prior work has developed tracking algorithms for computing the sun's location based on the longitude and latitude of the system, the current temperature, time of day, altitude, local atmospheric pressure, among other quantities.
 %
-However, these approaches do not account for changes in the local climate, current weather conditions (such as cloud coverage), or atmospheric composition which can be contributing factors to the total energy harvested by a solar panel.
+However, these approaches do not account for changes in the local climate, current weather conditions (such as cloud coverage), or atmospheric composition, all of which can be contributing factors to the total energy harvested by a solar panel.
 %
-In this work, we use the computational learning paradigm of Reinforcement Learning to optimize solar panel performance, measured in terms of the total amount of AC energy harvested in a 24 hour cycle by an end to end solar system. We advocate for the use of Reinforcement Learning for the Solar Tracking problem due to its {\it effectiveness}, {\it negligible cost}, {\it lack of dependence on extra components} (such as a thermometer, barometer, or a GPS), and {\it versatility}. Our contribution is twofold: (1) the adaptation of a state of the art RL algorithm, \textsc{SolaRL} to the problem of optimizing the total energy harvested by solar panels, and (2) the creation of an open source simulation platform for solar tracking experimentation. We evaluate the utility of our algorithm compared to baselines in our simulated environment across different time scales and in different places on Earth.
+In this work, we use the computational learning paradigm of Reinforcement Learning to optimize solar panel performance, measured in terms of the total amount of AC energy harvested by an end to end solar tracking system. We advocate for the use of Reinforcement Learning to solve the solar tracking problem due to its {\it effectiveness}, {\it negligible cost}, {\it lack of dependence on extra components} (such as a thermometer, barometer, or a GPS), and {\it versatility}. Our contribution is twofold: (1) the adaptation of state of the art RL methods to the problem of optimizing the total energy harvested by solar panels, and (2) the creation of an open source simulation platform for solar tracking experimentation. We evaluate the utility of our algorithm compared to typical tracking controllers, a supervised inference method, and random and fixed trackers in our simulated environment across different time scales, in different places on Earth, and using dramatically different percepts (sun coordinates and synthetic images of the sky).
 \end{abstract}
 
 % ----------------------
 % -- Introduction --
 % ----------------------
 \section{Introduction}
-Solar energy offer a pollution free and fully sustainable means of harvesting energy directly from the sun. Considerable effort has been directed toward maximizing the efficiency of end to end solar systems, including the design of photovoltaic cells, the layout of panels, engineering new photovoltaic architectures and materials, and solar tracking systems. Solar tracking is especially important for maximizing performance of solar panels~\cite{Eke2012,Rizk2008,King2001}. Systems equipped with a tracking mechanism given each panel one or two degrees of freedom. A tracking algorithm computes the relative location of the sun in the sky throughout the day and a controller moves the panel along its axes to point at the sun. The goal is to minimize the angle of incidence between incoming solar irradiance and the grid of photovoltatic cells, as in ~\citet{Eke2012,Benghanem2011,King2001, kalogirou1996design}. Prior work has consistently demonstrated that panels using a tracking system increase the total energy by a substantial amount \dnote{Let's put an actual percentage with some citations}. \\
+Solar energy offer a pollution free and fully sustainable means of harvesting energy directly from the sun. Considerable effort has been directed toward maximizing the efficiency of end to end solar systems, including the design of photovoltaic cells, the layout of panels, engineering new photovoltaic architectures and materials, and solar tracking systems\dnote{I'd like citations here}. Solar tracking is especially important for maximizing performance of solar panels~\cite{Eke2012,Rizk2008,King2001}. Given the proper hardware, a tracking algorithm computes the relative location of the sun in the sky throughout the day and a controller moves the panel along one or two axes to point at the sun. The goal is to minimize the angle of incidence between incoming solar irradiance and the grid of photovoltaic cells, as in ~\citet{Eke2012,Benghanem2011,King2001, kalogirou1996design}. Prior work has consistently demonstrated that panels using a tracking system increase the total energy by a substantial amount:~\citet{Eke2012} report that a dual-axis tracker yielded 71 kW/h, compared to a fixed panel's yield of 52 kW/h on the same day. Eke and Senturk also report energy harvesting gains of dual-axis tracking systems over fixed systems varying from 15\% to 40\%, depending on the time of year. Clearly, tracking can dramatically benefit solar photovoltaic systems.
 
-Existing solar tracking algorithms are sufficiently accurate to inform control of panels.~\citet{reda2004solar} develop an algorithm that computes the location the two panel-relative angles needed to determine the sun's location in the sky within $\pm 0.0003$ degrees of accuracy. Further, the approach is advertised as accurate between the years 2000 B.C.E to 6000 A.D, making it robust to the movements of relevant celestial bodies for the foreseeable future, However, there are three limitations to the approach. First, it's computationally inefficient to the point of impracticality. Second, the algorithm requires a variety of data not easily available, especially in locations with large grids of solar panels. Third, prior work suggests that pointing a panel directly at the sun is not always optimal behavior~\citet{Kelly2009,Hussein1995,King2001}. Consequently, algorithms that point panels directly at the sun may be achieving sub-optimal behavior. Other algorithms have addressed the first two limitations, focusing on creating a computationally efficient solar tracking algorithm that depends on a small number of easily accessible input data. The most widespread of these approaches is introduced by~\citet{Grena2008}, achieving computational efficiency but still depending on data like longitude, latitude, atmospheric pressure, and the temperature. \\ 
+Existing solar tracking algorithms are sufficiently accurate to inform control of panels.~\citet{reda2004solar} develop an algorithm that computes the location the two panel-relative angles needed to determine the sun's location in the sky within $\pm 0.0003$ degrees of accuracy. Further, the approach is advertised as accurate between the years 2000 B.C.E to 6000 A.D, making it robust to the movements of relevant celestial bodies for the foreseeable future.
 
-In this work, we use the computational paradigm of Reinforcement Learning (RL) to optimize solar panel performance, measured in the total amount of energy harvested in a 24 hour cycle. We advocate for the use of RL due to its {\it effectiveness}, {\it negligible cost}, {\it lack of dependence on extra data} (such as a GPS), and {\it versatility}. That is, using RL, solar control can take into account other environmental factors like temperature, cloud coverage, and atmospheric conditions. We develop a new RL algorithms, \textsc{SolaRL} designed specifically for optimizing solar energy harvesting, create a simulation platform for solar energy harvesting, and test the utility of our algorithm in this simulated environment against industrial standard algorithms and a standard state of the art supervised learning approach. We now turn to introducing relevant background.
+However, there are three limitations this solar tracking method. First, it's computationally inefficient to the point of impracticality. Second, the algorithm requires a variety of data not easily available, especially in locations commonly home to large grids of solar panels. Third, prior work suggests that pointing a panel directly at the sun is not always optimal behavior~\citet{Kelly2009,Hussein1995,King2001}. Consequently, algorithms a simple controller that points panels directly at the sun may be achieving sub-optimal behavior. Other algorithms have addressed the first two limitations, focusing on creating a computationally efficient solar tracking algorithm that depends on a small number of easily accessible input data. The most widespread of these approaches is introduced by~\citet{Grena2008}, achieving computational efficiency but still depending on data like longitude, latitude, atmospheric pressure, and the temperature. \\ 
+
+In this work, we advocate for the use the computational paradigm of Reinforcement Learning (RL) to optimize solar panel performance. We advocate for the use of RL due to its {\it effectiveness}, {\it negligible cost}, {\it lack of dependence on extra components} (such as a GPS), and {\it versatility}. That is, using RL, solar tracking and control can take into account other environmental factors like temperature, cloud coverage, and atmospheric conditions. We adapt state of the art RL approach of Deep $Q$-Networks to optimize solar energy harvesting, create a simulation platform for solar energy harvesting, and test the utility of our algorithm in this simulated environment against various baselines.
+
+We are in the process of building a physical system for the purpose of conducting experiments outside of simulation -- to this end, our simulation includes multiple perceptual modes of information. In the simplest case, the percepts given to the RL algorithm are the angles of the sun and the panel. In the more complex case, we use these angles to synthesize black and white images of the sun's movement throughout the day. The controller is then only given the raw bitmap to make its inference. Lastly, we simulate cloud coverage by randomly generating small Gaussian blobs in the synthesized images, which affect the solar irradiation that reach the planet's surface.
 
 
 % ----------------------
@@ -70,70 +74,16 @@ In this work, we use the computational paradigm of Reinforcement Learning (RL) t
 % Solar Tracking
 \subsection{Solar Tracking}
 
-
-
 \img{figures/placeholder.png}{0.2}
 \dnote{3D Diagram of sun, label relevant angles}
 
 \dnote{Definitions of all the angles/solar terms, etc.}
-
-
-% Commented out since this is for RLDM.
-\begin{comment}
-\subsection{Reinforcement Learning}
-
-Reinforcement Learning (RL) is a computational learning paradigm in which feedback takes the form of positive and negative reinforcement. An RL agent interacts with an environment through the repetition of the following two steps:
-\begin{enumerate}
-\item The agent receives some information about its environment at the current time, and some form of positive or negative reward.
-\item The agent takes action in the environment.
-\end{enumerate}
-This process is often formalized as an agent interacting with a Markov Decision Process (MDP)~\cite{puterman2014markov}. That is, the information the agent receives at each time step is a {\it state}, fully describing the environment's current configuration, and a real numbered value indicating the reinforcement. \\
-
-A finite horizon MDP is a five tuple $\langle \mc{S}, \mc{A}, \mc{R}, \mc{T}, H \rangle$, where:
-\begin{itemize}
-\item $\mc{S}$ is a finite set of states.
-\item $\mc{A}$ is a finite set of action.
-\item $\mc{R} : \mc{S} \times \mc{A} \longmapsto \mathbb{R}$ is a reward function.
-\item $\mc{T} : \mc{S} \times \mc{A} \longmapsto \Pr(\mc{S})$ is a transition function, denoting a probability distribution on next states given a state and an action.
-\item $H$ is a horizon, indicating how many steps into the future the agent is allowed to act.
-\end{itemize}
-
-The agent's goal is to solve for a policy, $\pi : \mc{S} \longmapsto \mc{A}$, that maximizes expected reward for $H$ steps. The expected reward is defined by the Value function:
-\begin{equation}
-V_H^*(s) = \max_a \left( \mc{R}(s,a) + \sum_{s'} \mc{T}(s,a,s') V_{H-1}^*(s)\right)
-\end{equation}
-Where $V_0(s) = \max_a \mc{R}(s,a)$. \\
-\end{comment}
-
 
 \subsection{Why Use RL for Solar Tracking?}
 
 There are three primary limitations of existing solar tracking algorithms: (1) Computational Inefficiency, (2) Dependence on unavailable data, (3) Limited optimality. A system that can be iteratively improved by an autonomous learning system can overcome all three of these limitations. At first glance, supervised learning ought to suffice to control such a system, but its effectiveness will depend on the data it trains on. We advocate for Reinforcement Learning due to the implicit {\it data collection} problem facing solar panels. In particular, the exploration problem central to Reinforcement Learning is present in solar tracking; the experience-energy pairs are only available based on the actions that the agent takes. Consequently, the agent does not get data i.i.d., and so traditional machine learning techniques are ill posed for the setting. To support this intuition, we compare our approach to state of the art supervised learning techniques in experimentation. Further, we stipulate that RL approaches achieve computational efficiency while not requiring any obscure data beyond a fixed monocular camera.
 
 Lastly,~\citet{Hsu2015} deploy $Q$ Learning on solar panels to configure the operating voltage of the end to end system, enabling higher efficiency. Thus, if hardware for a simple RL agent is already known to be useful for solar panels, we suggest that using RL could then provide both benefits: (1) learning optimal tracking for an arbitrary location and time on earth, and (2) control the operating voltage. \\
-
-
-
-% -----------------------
-% -- Related Work --
-% -----------------------
-\section{Related Work}
-
-
-\dnote{Continued discussion of the highly accurate one}
-In particular, the algorithm takes as input the following eight parameters:
-\begin{enumerate}
-\item ecliptic longitude
-\item ecliptitic latitude
-\item apparent right ascension
-\item apprarent declination
-\item nutation in longitude
-\item nutation in obliquity
-\item obliquity of ecliptic
-\item true geometric distance
-\end{enumerate}
-
-Other algorithms have addressed thes
 
 
 
@@ -151,23 +101,38 @@ Other algorithms have addressed thes
 % ----------------------
 \section{Experiments}
 
+We conduct experiments in a simulated environment to demonstrate the validity of the approach. Our most immediate next step is to construct a physical system to truly explore the hypothesis that RL is an effective solution to solar tracking. \\
 
-\subsection{Simulation Details}
+The underlying simulation for approximating the relative position of the sun in the sky for a point and time on Earth is based on a model originally introduced by~\citet{jordan1958chafer}, discussed at length by~\citet{masters2013renewable}, implemented in the library \texttt{pysolar}. Using the models from~\citet{masters2013renewable}, we estimate the amount of radiation hitting any point on Earth for a given time (ignoring weather and atmospheric conditions). We wrap this estimation inside of a Markov Decision Process using the open source library \texttt{simple-rl}\footnote{\url{https://github.com/david-abel/simple_rl}}. All of our code for running experiments and reproducing results is freely available\footnote{\url{https://github.com/david-abel/solar_panels_rl}}.
 
-\dnote{Describe pysolar setup, reward function, environment, link to code, description of algorithms}
+The agent's action space is to tilt the panel along each of the two axes, or to remain still. The agent's reward is the immediate energy received from the (simulated) sun.
 
-\dnote{I'd propose we do the following baselines:
-\begin{enumerate}
-\item Our RL approach
-\item Supervised approach (some deep NN with convolution on images)
-\item Simple tracker
-\item Highly accurate tracker
-\end{enumerate}}
+We run three experiments, each with the same baselines. Our baseline algorithms are:
+\begin{itemize}
+\item \texttt{random}: A randomly behaving agent.
+\item \texttt{fixed}: A panel that remains fixed.
+\item \texttt{supervised}: A supervised learner based on a Convolutional Neural Network architecture.
+\item \texttt{linear}: A $Q$-Learning with a Linear Function Approximator with radial basis functions used for feature kernels.
+\item \texttt{optimal}: A tracker that always minimizes the angle of incidence to the sun.
+\item \texttt{grena}: The efficient algorithm implemented by~\citet{Grena2008}.
+\item \texttt{dqn}: A Deep $Q$ Network.
+\end{itemize}
 
-\dnote{Plots of (1) Time, (2) Total energy for different areas *during learning*, (3) Something to visualize quality of optimal policy}
+\subsection{Experiment One: Coordinates}
 
+In the first case, we evaluate the effectiveness of each approach using a percept representation of:
+\begin{equation}
+\langle \texttt{sun altitude}, \texttt{sun azimuth}, \texttt{panel altitude}, \texttt{panel azimuth} \rangle
+\end{equation}
 
-\subsection{Results}
+\subsection{Experiment Two: Synthetic Sky Images}
+
+We then evaluate the effectiveness of each approach using a percept representation of a synthetically generated image
+\dnote{Example image}
+
+\subsection{Experiment Three: Synthetic Sky Images with Clouds}
+
+\dnote{Example image}
 
 
 
@@ -177,8 +142,6 @@ Other algorithms have addressed thes
 \section{Conclusion}
 
 
-
-\dnote{Future work: Solar Thermal Energy? Build a real system? Test more?}
 
 
 
