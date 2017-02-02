@@ -81,7 +81,7 @@ We are in the process of building a physical system for the purpose of conductin
 
 \subsection{Why Use RL for Solar Tracking?}
 
-There are three primary limitations of existing solar tracking algorithms: (1) Computational Inefficiency, (2) Dependence on unavailable data, (3) Limited optimality. A system that can be iteratively improved by an autonomous learning system can overcome all three of these limitations. At first glance, supervised learning ought to suffice to control such a system, but its effectiveness will depend on the data it trains on. We advocate for Reinforcement Learning due to the implicit {\it data collection} problem facing solar panels. In particular, the exploration problem central to Reinforcement Learning is present in solar tracking; the experience-energy pairs are only available based on the actions that the agent takes. Consequently, the agent does not get data i.i.d., and so traditional machine learning techniques are ill posed for the setting. To support this intuition, we compare our approach to state of the art supervised learning techniques in experimentation. Further, we stipulate that RL approaches achieve computational efficiency while not requiring any obscure data beyond a fixed monocular camera.
+There are three primary limitations of existing solar tracking algorithms: (1) Computational Inefficiency, (2) Dependence on unavailable data, (3) Limited optimality. A system that can be iteratively improved by an autonomous learning system can overcome all three of these limitations. At first glance, supervised learning ought to suffice to control such a system, but its effectiveness will depend on the data it trains on. We advocate for RL compared to traditional supervised learning techniques due to the implicit {\it data collection} problem facing solar panels. In particular, the exploration problem central to Reinforcement Learning is present in solar tracking; the experience-energy pairs are only available based on the actions that the agent takes. Consequently, the agent does not get data i.i.d., and so traditional machine learning techniques are ill posed for the setting. Furthermore, decisions made at any one time step have long term consequences, requiring a sequential decision making paradigm.
 
 Lastly,~\citet{Hsu2015} deploy $Q$ Learning on solar panels to configure the operating voltage of the end to end system, enabling higher efficiency. Thus, if hardware for a simple RL agent is already known to be useful for solar panels, we suggest that using RL could then provide both benefits: (1) learning optimal tracking for an arbitrary location and time on earth, and (2) control the operating voltage. \\
 
@@ -101,19 +101,38 @@ Lastly,~\citet{Hsu2015} deploy $Q$ Learning on solar panels to configure the ope
 % ----------------------
 \section{Experiments}
 
-We conduct experiments in a simulated environment to demonstrate the validity of the approach. Our most immediate next step is to construct a physical system to truly explore the hypothesis that RL is an effective solution to solar tracking. \\
+We conduct proof of concept experiments in a simulated environment to demonstrate the basic validity of the approach. Our most immediate next step is to construct a physical system to truly explore the hypothesis that RL is an effective solution to solar tracking. \\
 
-The underlying simulation for approximating the relative position of the sun in the sky for a point and time on Earth is based on a model originally introduced by~\citet{jordan1958chafer}, discussed at length by~\citet{masters2013renewable}, implemented in the library \texttt{pysolar}. Using the models from~\citet{masters2013renewable}, we estimate the amount of radiation hitting any point on Earth for a given time (ignoring weather and atmospheric conditions). We wrap this estimation inside of a Markov Decision Process using the open source library \texttt{simple-rl}\footnote{\url{https://github.com/david-abel/simple_rl}}. All of our code for running experiments and reproducing results is freely available\footnote{\url{https://github.com/david-abel/solar_panels_rl}}.
+There are three primary stages of our simulation:
+\begin{enumerate}
+\item For a given latitude, longitude, year, month, day, and time, simulate the relative positions of the sun to the specified location on earth.
+\item Given this relative location, compute the amount of {\it direct} solar irradiation from the sun hitting that point on earth.
+\item Given the panel's current tilt angle and orientation, simulate the amount of direct irradiation actually hitting the panel's surface.
+\end{enumerate}
 
-The agent's action space is to tilt the panel along each of the two axes, or to remain still. The agent's reward is the immediate energy received from the (simulated) sun.
+Approximating the relative position of the sun in the sky for a point and time on Earth (step 1.) is based on a model originally introduced by~\citet{jordan1958chafer}, discussed at length by~\citet{masters2013renewable}, implemented in the library \texttt{pysolar}. Then, for step 2., we use an implementation of the model from~\citet{masters2013renewable} to estimate the amount of radiation hitting any point on Earth for a given time. Prior studies have demonstrated that the {\it total irradiation} hitting a point on earth is the sum three components:
+\begin{equation}
+r_{total} = r_{direct} + r_{ground} + r_{sky}
+\end{equation}
+Where $r_{direct}$ is the most dominent component, indicating the direct irradiation, $r_{ground}$ denotes the irradiation reflected onto the panel's surface from the ground, and $r_{sky}$ denotes the diffuse irradiation from the sky. In our simulation, we are only capturing estimates of $r_{direct}$. However, it is worth noting that $r_{ground}$ and $r_{sky}$ are presently components that are completely ignored by existing tracking and control systems; we take these components be to further motivation to use RL to optimize control of these systems, as an RL system could learn to maximize the ground and sky radiation components when appropriate, without being programmed to do so explicitly.
+
+We wrap these three estimates inside of a Markov Decision Process using the open source library \texttt{simple-rl}\footnote{\url{https://github.com/david-abel/simple_rl}}. The MDP is defined as follows:
+\begin{itemize}
+\item Each state, $s \in \mc{S}$ is given by: $\{ \texttt{sun percept}, \texttt{panel NS angle}, \texttt{panel EW angle} \}$. The sun percept is varied between experiments.
+\item Each action, $a \in \mc{A}$ is one of $\{\texttt{tilt N}, \texttt{tilt E}, \texttt{tilt S}, \texttt{tilt W}, \texttt{nothing}\}$
+\item The reward function is simply the amount of solar irradiation hitting the panel's tilted surface at the given timestep.
+\item The transition function has two components. The first controls the sun percepts according to the models describred above, and the second dictates the panels movement.
+\item $\gamma = 0.99$.
+\end{itemize}
+
+All of our code for running experiments and reproducing results is freely available\footnote{\url{https://github.com/david-abel/solar_panels_rl}}.
 
 We run three experiments, each with the same baselines. Our baseline algorithms are:
 \begin{itemize}
 \item \texttt{random}: A randomly behaving agent.
 \item \texttt{fixed}: A panel that remains fixed.
-\item \texttt{supervised}: A supervised learner based on a Convolutional Neural Network architecture.
 \item \texttt{linear}: A $Q$-Learning with a Linear Function Approximator with radial basis functions used for feature kernels.
-\item \texttt{optimal}: A tracker that always minimizes the angle of incidence to the sun.
+%\item \texttt{optimal}: A tracker that always minimizes the angle of incidence to the sun.
 \item \texttt{grena}: The efficient algorithm implemented by~\citet{Grena2008}.
 \item \texttt{dqn}: A Deep $Q$ Network.
 \end{itemize}
