@@ -8,19 +8,12 @@ Author: Emily Reif
 from simple_rl.mdp.oomdp.OOMDPClass import OOMDP
 from simple_rl.mdp.oomdp.OOMDPObjectClass import OOMDPObject
 from SolarOOMDPStateClass import SolarOOMDPState
-<<<<<<< HEAD
 import math as m
 import numpy
 from pysolar import solar, radiation
 import datetime
 import random
-=======
-import math
-from Pysolar import solar, radiation
-import datetime
-import numpy as np
-from matplotlib import pyplot as plt
->>>>>>> a4b8f356d1e12a15ef684d184eb4b385f66f4e04
+
 
 class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
@@ -34,17 +27,7 @@ class SolarOOMDP(OOMDP):
 
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    #timestep is in minutes, for now
-<<<<<<< HEAD
-    def __init__(self, timestep=30, panel_step=.1, panel_start_angle=0, year=2016, month=11, day=4, hour=0, minute=0, latitude_deg = 20, longitude_deg = 20):
-        self.time = datetime.datetime(year, month, day, hour, minute)
-        self.day = day
-        init_state = self._create_state(90.0, 90.0, self.time, longitude_deg, latitude_deg)
-        OOMDP.__init__(self, SolarOOMDP.ACTIONS, self.objects, self._transition_func, self._reward_func, init_state=init_state)
-
-=======
     def __init__(self, timestep=30, panel_step=.1, panel_start_angle=0, year=2016, month=11, day=4, hour=0, minute=0, latitude_deg = 51.5074, longitude_deg = 0.1278, img_dims = 64):
->>>>>>> a4b8f356d1e12a15ef684d184eb4b385f66f4e04
         # Global information
         self.latitude_deg = latitude_deg # positive in the northern hemisphere
         self.longitude_deg = longitude_deg # negative reckoning west from prime meridian in Greenwich, England
@@ -52,7 +35,7 @@ class SolarOOMDP(OOMDP):
         self.timestep = timestep
         self.time = datetime.datetime(year, month, day, hour, minute)
         self.img_dims = img_dims
-
+        self.day = day
 
         init_state = self._create_state(90.0, 90.0, self.time, longitude_deg, latitude_deg)
         OOMDP.__init__(self, SolarOOMDP.ACTIONS, self.objects, self._transition_func, self._reward_func, init_state=init_state)
