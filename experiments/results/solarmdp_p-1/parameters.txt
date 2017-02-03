@@ -1,9 +1,0 @@
-(MDP)
-	solarmdp_p-1
-(Agents)
-	random
-	fixed-policy
-(Params)
-	num_instances : 50
-	num_episodes : 1
-	num_steps : 120
