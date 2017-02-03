@@ -1,8 +1,7 @@
 (MDP)
-	solarmdp_p-1
+	solarmdp_p-10
 (Agents)
-	random
-	fixed-policy
+	linear-uniform
 (Params)
 	num_instances : 50
 	num_episodes : 1

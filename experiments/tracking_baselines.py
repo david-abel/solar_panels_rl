@@ -1,7 +1,7 @@
 '''
 tracking_baselines.py
 
-Contains several baselines for tracking the location of the sun from:
+Contains tracking functions for computing the location of the sun, primarily from:
 
 	"Five new algorithms for the computation of sun position from 2010 to 2110"
 	by Roberto Grena, 2012, Solar Energy, Volume 86.
@@ -33,18 +33,38 @@ def _compute_new_times(year, month, day, hour, delta_t):
 
 	return year, month, time, rot_ind_time
 
-def static_policy(state):
-	return "doNothing"
+def static_policy(state, action="doNothing"):
+	return action
 
+# ==========================
+# ======== TRACKERS ========
+# ==========================
 
-def policy_from_tracker(state, tracker):
+def tracker_from_state_info(state):
+	'''
+	Args:
+		state (SolarOOMDP state): contains the panel and sun az/alt.
+		panel_shift (int): how much to move the panel by each timestep.
+
+	Returns:
+		(tuple): <sun_az, sun_alt, panel_az, panel_alt>
+	'''
+
+	# When state has this stuff.
+	sun_az = state.get_sun_angle_AZ()
+	sun_alt = state.get_sun_angle_ALT()
+	panel_az = state.get_panel_angle_AZ()
+	panel_alt = state.get_panel_angle_ALT()
+
+	return sun_az, sun_alt, panel_az, panel_alt
+
+def tracker_from_day_time_loc(state):
 	'''
 	Args:
 		state (SolarOOMDP state): contains the year, month, hour etc.
-		tracker (lambda: {year, time ...} --> azimuth, altitude)
 
 	Returns:
-		(str): Action in the set SolarOOMDPClass.ACTIONS
+		(tuple): <sun_az, sun_alt, panel_az, panel_alt>
 	'''
 
 	# Get relevant data.
@@ -52,32 +72,11 @@ def policy_from_tracker(state, tracker):
 	delta_t, longitude, latitude = state.get_delta_t(), state.get_longitude(), state.get_latitude()
 
 	# Use tracker to compute sun vector.
-	azimuth, altitude = tracker(year, month, hour, day, delta_t, longitude, latitude)
-	sun_vector = math.sin(azimuth), math.cos(azimuth), math.sin(altitude)
+	sun_az, sun_alt = tracker(year, month, hour, day, delta_t, longitude, latitude)
 
-	# Compute difference between panel vector and sun vector
-	panel_vector = math.sin(math.radians(state.get_panel_angle_NS)), math.cos(math.radians(state.get_panel_angle_NS)), math.cos(math.radians(state.get_panel_angle_EW()))
+	panel_az, panel_alt = state.get_panel_az(), state.get_panel_alt()
 
-	biggest_diff = 0
-	biggest_index = 0
-	for i in range(len(sun_vector)):
-		delta = abs(sun_vector[i] - panel_vector[i])
-		if delta > biggest_diff:
-			biggest_index = i
-			biggest_diff = delta
-
-	# This will be more sophisticated.
-	if biggest_diff <= 5:
-		return "doNothing"
-	elif biggest_index == 0 and sun_vector[0] - panel_vector[0] > 0:
-		return "panelForwardNS"
-	elif biggest_index == 0 and panel_vector[0] - sun_vector[0] >= 0:
-		return "panelBackNS"
-	else:
-		return "panelForward"
-
-
-["panelForwardNS", "panelBackNS", "panelForwardEW", "panelBackEW", "doNothing"]
+	return sun_az, sun_alt, panel_az, panel_alt
 
 def grena_tracker(year, month, hour, day, delta_t, longitude, latitude):
 	pass
@@ -123,10 +122,6 @@ def simple_tracker(year, month, hour, day, delta_t, longitude, latitude):
 	hour_angle = 1.75283 + 6.3003881 * time + longitude - right_asc
 
 	return right_asc, declination, hour_angle
-
-def bad_tracker(year, month, hour, day, delta_t, longitude, latitude):
-	return 0.0, 0.0
-
 
 def main():
 	simple_tracker(year=2060, month=1, hour=13, day=26, delta_t=0, longitude=.1, latitude=-.2)

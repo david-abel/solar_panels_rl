@@ -1,0 +1,8 @@
+(MDP)
+	solarmdp_p-5
+(Agents)
+	linear-uniform-rbf-uniform
+(Params)
+	num_instances : 3
+	num_episodes : 1
+	num_steps : 100800

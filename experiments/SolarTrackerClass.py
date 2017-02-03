@@ -22,16 +22,18 @@ class SolarTracker(object):
 			(str): Action in the set SolarOOMDPClass.ACTIONS
 		'''
 
-		ns_diff = state.get_delta_angle_NS()
-		ew_diff = state.get_delta_angle_EW()
+		sun_az, sun_alt, panel_az, panel_alt = self.tracker(state)
+		
+		az_diff = sun_az - panel_az
+		alt_diff = sun_alt - panel_alt
 
-		if max(ns_diff, ew_diff) < self.panel_step:
+		if abs(az_diff) < 5 and abs(alt_diff) < 5:
 			return "doNothing"
-		elif abs(ns_diff) > abs(ew_diff) and ns_diff > 0:
-			return "panelBackNS"
-		elif abs(ns_diff) < abs(ew_diff) and ew_diff > 0:
-			return "panelForwardNS"
-		elif abs(ns_diff) > abs(ew_diff) and ns_diff < 0:
-			return "panelBackEW"
+		# elif abs(az_diff) > abs(alt_diff) and az_diff > 0:
+			# return "panelForwardAZ"
+		# elif abs(az_diff) > abs(alt_diff) and az_diff < 0:
+			# return "panelBackAZ"
+		elif abs(az_diff) < abs(alt_diff) and alt_diff > 0:
+			return "panelForwardALT"
 		else:
-			return "panelForwardEW"
+			return "panelBackALT"

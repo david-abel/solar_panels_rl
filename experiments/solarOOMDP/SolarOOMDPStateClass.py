@@ -22,13 +22,13 @@ class SolarOOMDPState(OOMDPState):
         return self.objects["time"][0]["minute"] * 1
 
     def get_sun_angle_AZ(self):
-        return self.objects["sun"][0]["angle_AZ"]
+        return self.objects["sun"][0]["angle_AZ"] * 1
 
     def get_sun_angle_ALT(self):
-        return self.objects["sun"][0]["angle_ALT"]
+        return self.objects["sun"][0]["angle_ALT"] * 1
 
     def get_panel_angle_AZ(self):
-        return self.objects["agent"][0]["angle_AZ"]
+        return self.objects["agent"][0]["angle_AZ"] * 1
 
     def get_panel_angle_ALT(self):
-        return self.objects["agent"][0]["angle_ALT"]
+        return self.objects["agent"][0]["angle_ALT"] * 1
