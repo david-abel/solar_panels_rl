@@ -7,4 +7,4 @@
 (Params)
 	num_instances : 10
 	num_episodes : 1
-	num_steps : 144000
+	num_steps : 500

@@ -9,8 +9,10 @@ from simple_rl.mdp.oomdp.OOMDPClass import OOMDP
 from simple_rl.mdp.oomdp.OOMDPObjectClass import OOMDPObject
 from SolarOOMDPStateClass import SolarOOMDPState
 import math
-from pysolar import solar, radiation
+from Pysolar import solar, radiation
 import datetime
+import numpy as np
+from matplotlib import pyplot as plt
 
 class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
@@ -20,19 +22,25 @@ class SolarOOMDP(OOMDP):
 
     # give altitiude and azimuth
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "month", "day", "hour", "minute", "latitude", "longitude"]
+
+
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
     #timestep is in minutes, for now
-    def __init__(self, timestep=30, panel_step=.1, panel_start_angle=0, year=2016, month=11, day=4, hour=0, minute=0, latitude_deg = 42.3, longitude_deg = -71.4):
-        self.time = datetime.datetime(year, month, day, hour, minute)
-        init_state = self._create_state(90.0, 90.0, self.time, longitude_deg, latitude_deg)
-        OOMDP.__init__(self, SolarOOMDP.ACTIONS, self.objects, self._transition_func, self._reward_func, init_state=init_state)
-
+    def __init__(self, timestep=30, panel_step=.1, panel_start_angle=0, year=2016, month=11, day=4, hour=0, minute=0, latitude_deg = 51.5074, longitude_deg = 0.1278, img_dims = 64):
         # Global information
         self.latitude_deg = latitude_deg # positive in the northern hemisphere
         self.longitude_deg = longitude_deg # negative reckoning west from prime meridian in Greenwich, England
         self.step_panel = panel_step
         self.timestep = timestep
+        self.time = datetime.datetime(year, month, day, hour, minute)
+        self.img_dims = img_dims
+
+
+        init_state = self._create_state(90.0, 90.0, self.time, longitude_deg, latitude_deg)
+        OOMDP.__init__(self, SolarOOMDP.ACTIONS, self.objects, self._transition_func, self._reward_func, init_state=init_state)
+
+
 
     def _reward_func(self, state, action):
         '''
@@ -142,7 +150,6 @@ class SolarOOMDP(OOMDP):
         Returns:
             (OOMDP State)
         '''
-
         self.objects = {attr : [] for attr in SolarOOMDP.CLASSES}
 
         # Make agent.
@@ -156,8 +163,14 @@ class SolarOOMDP(OOMDP):
         sun_attributes = {}
         sun_angle_AZ = solar.GetAzimuth(lat, lon, t)
         sun_angle_ALT = solar.GetAltitudeFast(lat, lon, t)
-        sun_attributes["angle_AZ"] = sun_angle_AZ
-        sun_attributes["angle_ALT"] = sun_angle_ALT
+        # sun_attributes["angle_AZ"] = sun_angle_AZ
+        # sun_attributes["angle_ALT"] = sun_angle_ALT
+        image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT)
+        for i in range (self.img_dims):
+            for j in range (self.img_dims):
+                idx = i*self.img_dims + j
+                sun_attributes['pix' + str(i)] = image[i][j]
+
         sun = OOMDPObject(attributes=sun_attributes, name="sun")
         self.objects["sun"].append(sun)
 
@@ -178,6 +191,39 @@ class SolarOOMDP(OOMDP):
         self.objects["worldPosition"].append(pos)
 
         return SolarOOMDPState(self.objects)
+
+    def _create_sun_image(self, sun_angle_AZ, sun_angle_ALT):
+        # Create image of the sun, given alt and az
+        sun_dim = self.img_dims/16
+
+        # For viewing purposes, we normalize between 0 and 1 on the x axis and 0 to .5 on the y axis
+        x = self.img_dims * (1 + math.sin(math.radians(sun_angle_AZ)))/2
+        y = self.img_dims * math.sin(math.radians(sun_angle_ALT))/2
+        image = [l[:] for l in [[0] * self.img_dims] * self.img_dims]
+
+        # Make gaussian sun
+        for i in range (self.img_dims):
+            for j in range (self.img_dims):
+                image[i][j] = self._gaussian(j, x, sun_dim) * self._gaussian(i, y, sun_dim)
+
+        # Show image (for testing purposes)
+        self._show_image(image)
+
+        return image
+
+    def _show_image(self, image):
+        plt.imshow(image, cmap='Greys', interpolation='nearest')
+        plt.gca().invert_yaxis()
+        plt.title( 'Images used to train model')
+        plt.figtext(0.01, 0.95, 'Date and Time: ' + str(self.time.ctime()), fontsize = 11)
+        plt.figtext(0.01, 0.9, 'Latitude: ' + str(self.latitude_deg), fontsize = 11)
+        plt.figtext(0.01, 0.85, 'Longitude: ' + str(self.longitude_deg), fontsize = 11)
+        plt.show()
+
+    # Credit to http://stackoverflow.com/questions/14873203/plotting-of-1-dimensional-gaussian-distribution-function
+    # TODO: fix ^
+    def _gaussian(self, x, mu, sig):
+        return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
 
     def __str__(self):
         return "solarmdp_" + "p-" + str(self.step_panel)

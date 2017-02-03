@@ -22,7 +22,7 @@ import tracking_baselines as tb
 def main():
     # Setup MDP.
     panel_step = 1
-    solar_mdp = SolarOOMDP(timestep=5, panel_step=panel_step)
+    solar_mdp = SolarOOMDP(timestep=5, panel_step=panel_step, hour=12)
     actions = solar_mdp.get_actions()
     gamma = solar_mdp.get_gamma()
 
@@ -40,7 +40,7 @@ def main():
     agents = [lin_approx_agent, static_agent, random_agent]
 
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=10, num_episodes=1, num_steps=24*6*1000)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=10, num_episodes=1, num_steps=500)
 
 if __name__ == "__main__":
     main()
