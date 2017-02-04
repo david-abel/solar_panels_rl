@@ -3,17 +3,15 @@
 % --- Packages ---
 \usepackage{rldm}
 %\usepackage[usenames, dvipsnames]{color} % Cool colors
-\usepackage{enumerate, amsmath, hyperref, amsthm, verbatim, amssymb, dashrule, tikz, bbm, booktabs, bm}
+\usepackage{enumerate, amsmath, hyperref, amsthm, subfigure, verbatim, amssymb, dashrule, tikz, bbm, booktabs, bm}
 \usepackage[framemethod=TikZ]{mdframed}
 \usepackage[numbers]{natbib}
 
-
+\newcommand{\dnote}[1]{\textcolor{blue}{Dave: #1}}
+\newcommand{\mc}{\mathcal}
 
 % --- Misc. ---
 \hbadness=10000 % No "underfull hbox" messages.
-
-% --- Commands ---
-\input{commands}
 
 % --- Meta Info ---
 \title{Improving Solar Panels with Reinforcement Learning}
@@ -71,32 +69,24 @@ We are in the process of building a physical system for the purpose of conductin
 % ----------------------
 \section{Background}
 
-% Solar Tracking
-\subsection{Solar Tracking}
-
-\img{figures/placeholder.png}{0.2}
-\dnote{3D Diagram of sun, label relevant angles}
-
-\dnote{Definitions of all the angles/solar terms, etc.}
-
-\subsection{Why Use RL for Solar Tracking?}
-
-\dnote{Not sure we need this paragraph. Might already be explained above.}
-There are three primary limitations of existing solar tracking algorithms: (1) Computational Inefficiency, (2) Dependence on unavailable data, (3) Limited optimality. A system that can be iteratively improved by an autonomous learning system can overcome all three of these limitations. At first glance, supervised learning ought to suffice to control such a system, but its effectiveness will depend on the data it trains on. We advocate for RL compared to traditional supervised learning techniques due to the implicit {\it data collection} problem facing solar panels. In particular, the exploration problem central to Reinforcement Learning is present in solar tracking; the experience-energy pairs are only available based on the actions that the agent takes. Consequently, the agent does not get data i.i.d., and so traditional machine learning techniques are ill posed for the setting. Furthermore, decisions made at any one time step have long term consequences, requiring a sequential decision making paradigm.
-
-Lastly,~\citet{Hsu2015} deploy $Q$ Learning on solar panels to configure the operating voltage of the end to end system, enabling higher efficiency. Thus, if hardware for a simple RL agent is already known to be useful for solar panels, we suggest that using RL could then provide both benefits: (1) learning optimal tracking for an arbitrary location and time on earth, and (2) control the operating voltage. \\
+The energy harvested by a single solar panel is a monotonically increasing function of the amount of solar irradiation in contact with the photovoltaic cells. We denote the total irradiation $R_t$, which, per the models introduced by~\citet{kamali2006estimating}, is approximated by the sum of the {\it direct} irradiaton, $R_d$, {\it diffuse} irradiation, $R_f$, and {\it reflective} irradation, $R_r$. Each of these components is modified by a scalar, $\theta_d, \theta_f, \theta_r \in [0,1]$, indicating how much the angle of incidence affects the amount of irradiation contacting the panel:
+\begin{equation}
+R_t = R_d \theta_d + R_f \theta_f + R_r \theta_r
+\label{eq:eq:total_rads}
+\end{equation}
+As discussed previously, existing tracking algorithms make the assumption that the panel should point directly at the sun to maximize direct irradiation~\cite{Grena2008,Grena2012,reda2004solar}. Many atmospheric and weather conditions, such as clouds, or highly reflective surfaces like snow, create opportunities for a dynamic controller to thrive.
 
 
+% Diagram with labels
+\begin{figure}
+\begin{center}
+\includegraphics[scale=0.3]{figures/placeholder.png}
+\caption{\dnote{3D Diagram of sun, label relevant angles}}
+\end{center}
+\end{figure}
 
-% -----------------------------
-% -- System Overview --
-% -----------------------------
-\section{System Overview}
 
-\img{figures/placeholder.png}{0.2}
-\dnote{Diagram}
-
-\dnote{I think we want to describe the radiation stuff here. Rename this section ``background".}
+% Lastly,~\citet{Hsu2015} deploy $Q$ Learning on solar panels to configure the operating voltage of the end to end system, enabling higher efficiency. Thus, if hardware for a simple RL agent is already known to be useful for solar panels, we suggest that using RL could then provide both benefits: (1) learning optimal tracking for an arbitrary location and time on earth, and (2) control the operating voltage. \\
 
 
 % ----------------------
@@ -104,57 +94,130 @@ Lastly,~\citet{Hsu2015} deploy $Q$ Learning on solar panels to configure the ope
 % ----------------------
 \section{Experiments}
 
-We conduct proof of concept experiments in a simulated environment to demonstrate the basic validity of the approach. Our most immediate next step is to construct a physical system to truly explore the hypothesis that RL is an effective solution to solar tracking. \\
+We conduct proof of concept experiments in a simulated environment to demonstrate the validity of the approach. The core of the simulation is to estimate the total solar irradiation hitting the panel's surface, for a given orientation of the panel (and a time, day, year, and place on Earth). Naturally, our most immediate next step is to evaluate our methods on an actual set of solar panels.
 
 There are three primary stages of our simulation:
 \begin{enumerate}
-\item For a given latitude, longitude, year, month, day, and time, simulate the relative positions of the sun to the specified location on earth.
-\item Given this relative location, compute the amount of {\it direct} solar irradiation from the sun hitting that point on earth.
-\item Given the panel's current tilt angle and orientation, simulate the amount of direct irradiation actually hitting the panel's surface.
+\item {\bf Computing Angles}: For a given latitude, longitude, year, month, day, and time, we simulate the relative positions of the sun to the specified location on earth.
+
+To compute these estimates in simulation, we use a model originally introduced by~\citet{jordan1958chafer}, discussed at length by~\citet{masters2013renewable}, implemented in the library \texttt{pysolar}.
+
+\item {\bf Computing $\pmb{R_d, R_f, R_r}$}: Given the relative location computed in Step 1., we compute the amount of direct, diffuse, and reflective irradiation hitting the solar panel's location.
+
+We compute each of these quantities as follows. For $R_d$, we use Equation 7.21 from~\citet{masters2013renewable}:
+\begin{equation}
+R_d = A e^{-km}
+\end{equation}
+Where $A$ is the ``apparent" extraterrestrial flux, $k$ is the optical depth, and $m$ is the air mass ratio, given by:
+\begin{equation}
+m = \frac{1}{\sin \beta}
+\end{equation}
+Where $\beta$ is the altitude angle of the sun
+
+\item {\bf Computing $\pmb{\theta_d, \theta_f, \theta_r}$}: Given the panel's current tilt angle and orientation, simulate the amount of direct irradiation actually hitting the panel's surface.
+
+To compute the irradiation on the angled surface of the solar panel, we used the model of~\citet{andersen1980comments}, which builds on the original model developed by~\citet{klein1977calculation}:
+
+\newcommand\ddfrac[2]{\frac{\displaystyle #1}{\displaystyle #2}}
+
+\begin{align*}
+\theta_d &= \ddfrac{\int_{\omega_{rT}}^{\omega_{sT}} \cos \left(\alpha \omega\right) d \omega}{\int_{\omega_{r}}^{\omega_{s}} \cos \left(Z \omega\right) d \omega} \\
+%&= \cos S \sin \delta \sin \phi (\frac{\pi}{180})(\omega_{sT} - \omega_{rT}) - (\sin \delta \cos \phi \sin S \cos \kappa_T) (\frac{\pi}{180})(\omega_{sT} - \omega_{rT}) + (\cos \phi \cos \delta \cos S) (\sin \omega_{sT})
+\end{align*}
+
+Where $\omega_{rT}$ and $\omega_{sT}$ are sunrise and sunset hour angles in degrees, given by Equation 8 of~\citet{kamali2006estimating}:
+\begin{align*}
+\omega_{rT} &= - \min\left(\omega_s, \cos^{-1} \left( AB + \mathbbm{1}(\kappa_T > 0)\frac{\sqrt{A^2 - B^2 + 1}}{(A^2 + 1)}\right)\right) \\
+\omega_{sT} &= - \min\left(\omega_s, \cos^{-1} \left( AB - \mathbbm{1}(\kappa_T > 0)\frac{\sqrt{A^2 - B^2 + 1}}{(A^2 + 1)}\right)\right)
+\end{align*}
+Where:
+\begin{align*}
+\mathbbm{1}(\kappa_T > 0) &= \begin{cases}
+1& \kappa_T > 0 \\
+-1& \text{otherwise}
+\end{cases} \\
+A &= \frac{\cos \phi}{(\sin \kappa_T \tan S)} + \frac{\sin \phi}{\tan \kappa_T} \\
+B &= \frac{\tan \delta}{(\cos \phi \tan \kappa_T)} - \frac{\sin \phi}{\sin \alpha \tan S}
+\end{align*}
+
 \end{enumerate}
 
-Approximating the relative position of the sun in the sky for a point and time on Earth (step 1.) is based on a model originally introduced by~\citet{jordan1958chafer}, discussed at length by~\citet{masters2013renewable}, implemented in the library \texttt{pysolar}. Then, for step 2., we use an implementation of the model from~\citet{masters2013renewable} to estimate the amount of radiation hitting any point on Earth for a given time. Prior studies have demonstrated that the {\it total irradiation} hitting a point on earth is the sum three components:
-\begin{equation}
-r_{total} = r_{direct} + r_{ground} + r_{sky}
-\end{equation}
-Where $r_{direct}$ is the most dominent component, indicating the direct irradiation, $r_{ground}$ denotes the irradiation reflected onto the panel's surface from the ground, and $r_{sky}$ denotes the diffuse irradiation from the sky. In our simulation, we are only capturing estimates of $r_{direct}$. However, it is worth noting that $r_{ground}$ and $r_{sky}$ are presently components that are completely ignored by existing tracking and control systems; we take these components be to further motivation to use RL to optimize control of these systems, as an RL system could learn to maximize the ground and sky radiation components when appropriate, without being programmed to do so explicitly.
+% \alpha = altitude, 
 
-We wrap these three estimates inside of a Markov Decision Process using the open source library \texttt{simple-rl}\footnote{\url{https://github.com/david-abel/simple_rl}}. The MDP is defined as follows:
+
+
+
+We wrap these three steps inside of a Markov Decision Process (MDP) using the open source library \texttt{simple-rl}\footnote{\url{https://github.com/david-abel/simple_rl}}. The MDP is defined as follows:
 \begin{itemize}
-\item Each state, $s \in \mc{S}$ is given by: $\{ \texttt{sun percept}, \texttt{panel NS angle}, \texttt{panel EW angle} \}$. The sun percept is varied between experiments.
-\item Each action, $a \in \mc{A}$ is one of $\{\texttt{tilt N}, \texttt{tilt E}, \texttt{tilt S}, \texttt{tilt W}, \texttt{nothing}\}$
-\item The reward function is simply the amount of solar irradiation hitting the panel's tilted surface at the given timestep.
-\item The transition function has two components. The first controls the sun percepts according to the models describred above, and the second dictates the panels movement.
+\item Each state, $s \in \mc{S}$ is given by: $\{ \texttt{sun percept},\ \texttt{panel NS angle},\ \texttt{panel EW angle} \}$. The sun percept is varied between experiments.
+\item In the single axis experiments, each action, $a \in \mc{A}$ is one of $\{\texttt{tilt N},\ \texttt{tilt S},\ \texttt{nothing}\}$. In the dual axis experiments, $\mc{A} = \{\texttt{tilt N},\ \texttt{tilt E},\ \texttt{tilt S},\ \texttt{tilt W},\ \texttt{nothing}\}$.
+\item The reward function is given by Equation~\ref{eq:total_rads}; the total amount of solar irradiation hitting the panel's tilted surface at the given timestep.
+\item The transition function has two components. The first controls the sun percepts according to the models described above, and the second dictates the panels movement.
 \item $\gamma = 0.99$.
 \end{itemize}
 
-All of our code for running experiments and reproducing results is freely available\footnote{\url{https://github.com/david-abel/solar_panels_rl}}.
+All of our code for running experiments and reproducing results is freely available\footnote{\url{https://github.com/david-abel/solar_panels_rl}}. Additional relevant parameters were set as follows: \dnote{Mention timestep, locations, etc.}
 
-We run three experiments, each with the same baselines. Our baseline algorithms are:
+We conduct three experiments, each with the same baseline algorithms. Each subsequent experiment is intended to increment the level of sophistication of the simulation. Our baseline algorithms are:
 \begin{itemize}
 \item \texttt{random}: A randomly behaving agent.
 \item \texttt{fixed}: A panel that remains fixed.
-\item \texttt{linear}: A $Q$-Learning with a Linear Function Approximator with radial basis functions used for feature kernels.
-%\item \texttt{optimal}: A tracker that always minimizes the angle of incidence to the sun.
+\item \texttt{linear}: A $Q$-Learning with a Linear Function Approximator.
+\item \texttt{linear-rbf}: A $Q$-Learning with a Linear Function Approximator with a Gaussian radial basis function kernel, which introduces some non-linearity. That is, each state $s \in \mc{S}$ consists of $k$ state variables: $s_i = \langle s_{i,1}, \ldots, s_{i,k}\rangle$. The radial basis is given by:
+\begin{equation}
+\varphi(s_{i,j}) = e^{- \left(\varepsilon \cdot s_{i,j}\right)^2}
+\end{equation}
+We set $\varepsilon = 1$. Thus, the agent receives each state as:
+\begin{equation}
+\left\langle \varphi(s_{i,1}), \ldots,  \varphi(s_{i,k})\right\rangle
+\end{equation}
+\item \texttt{optimal}: A tracker that always minimizes the angle of incidence to the sun.\footnote{This algorithm cheats, as it knows the true location of the sun in all experiments.}
 \item \texttt{grena}: The efficient algorithm implemented by~\citet{Grena2008}.
-\item \texttt{dqn}: A Deep $Q$ Network.
+%\item \texttt{dqn}: A Deep $Q$ Network.
 \end{itemize}
 
 \subsection{Experiment One: Coordinates}
 
-In the first case, we evaluate the effectiveness of each approach using a percept representation of:
+In the simplest experiment, we evaluate the effectiveness of each approach using a percept representation of:
 \begin{equation}
-\langle \texttt{sun altitude}, \texttt{sun azimuth}, \texttt{panel altitude}, \texttt{panel azimuth} \rangle
+\langle \texttt{sun altitude},\ \texttt{sun azimuth},\ \texttt{panel altitude},\ \texttt{panel azimuth} \rangle
 \end{equation}
+
+% Results
+\begin{figure}
+\begin{center}
+\subfigure[One-Axis]{\includegraphics[scale=0.1]{figures/placeholder.png}}\hspace{5mm}
+\subfigure[Two-Axis]{\includegraphics[scale=0.1]{figures/placeholder.png}}
+\caption{\dnote{3D Diagram of sun, label relevant angles}}
+\end{center}
+\end{figure}
 
 \subsection{Experiment Two: Synthetic Sky Images}
 
 We then evaluate the effectiveness of each approach using a percept representation of a synthetically generated image
 \dnote{Example image}
 
+% Results
+\begin{figure}
+\begin{center}
+\subfigure[One-Axis]{\includegraphics[scale=0.1]{figures/placeholder.png}}\hspace{5mm}
+\subfigure[Two-Axis]{\includegraphics[scale=0.1]{figures/placeholder.png}}
+\caption{\dnote{3D Diagram of sun, label relevant angles}}
+\end{center}
+\end{figure}
+
 \subsection{Experiment Three: Synthetic Sky Images with Clouds}
 
 \dnote{Example image}
+
+% Results
+\begin{figure}
+\begin{center}
+\subfigure[One-Axis]{\includegraphics[scale=0.1]{figures/placeholder.png}}\hspace{5mm}
+\subfigure[Two-Axis]{\includegraphics[scale=0.1]{figures/placeholder.png}}
+\caption{\dnote{3D Diagram of sun, label relevant angles}}
+\end{center}
+\end{figure}
 
 
 
@@ -164,7 +227,7 @@ We then evaluate the effectiveness of each approach using a percept representati
 \section{Conclusion}
 
 
-
+lorem ipsum...
 
 
 
