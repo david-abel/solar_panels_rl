@@ -9,18 +9,6 @@ class SolarOOMDPState(OOMDPState):
     def __init__(self, objects):
         OOMDPState.__init__(self, objects=objects)
 
-    def get_month(self):
-        return self.objects["time"][0]["month"] * 1
-
-    def get_day(self):
-        return self.objects["time"][0]["day"] * 1
-
-    def get_hour(self):
-        return self.objects["time"][0]["hour"] * 1
-
-    def get_minute(self):
-        return self.objects["time"][0]["minute"] * 1
-
     def get_sun_angle_AZ(self):
         return self.objects["sun"][0]["angle_AZ"] * 1
 

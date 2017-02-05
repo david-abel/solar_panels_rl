@@ -47,16 +47,14 @@ def tracker_from_state_info(state):
 		panel_shift (int): how much to move the panel by each timestep.
 
 	Returns:
-		(tuple): <sun_az, sun_alt, panel_az, panel_alt>
+		(tuple): <sun_az, sun_alt>
 	'''
 
 	# When state has this stuff.
 	sun_az = state.get_sun_angle_AZ()
 	sun_alt = state.get_sun_angle_ALT()
-	panel_az = state.get_panel_angle_AZ()
-	panel_alt = state.get_panel_angle_ALT()
 
-	return sun_az, sun_alt, panel_az, panel_alt
+	return sun_az, sun_alt
 
 def tracker_from_day_time_loc(state):
 	'''
@@ -64,7 +62,7 @@ def tracker_from_day_time_loc(state):
 		state (SolarOOMDP state): contains the year, month, hour etc.
 
 	Returns:
-		(tuple): <sun_az, sun_alt, panel_az, panel_alt>
+		(tuple): <sun_az, sun_alt>
 	'''
 
 	# Get relevant data.
@@ -74,9 +72,7 @@ def tracker_from_day_time_loc(state):
 	# Use tracker to compute sun vector.
 	sun_az, sun_alt = tracker(year, month, hour, day, delta_t, longitude, latitude)
 
-	panel_az, panel_alt = state.get_panel_az(), state.get_panel_alt()
-
-	return sun_az, sun_alt, panel_az, panel_alt
+	return sun_az, sun_alt
 
 def grena_tracker(year, month, hour, day, delta_t, longitude, latitude):
 	pass

@@ -1,46 +1,55 @@
 '''
 SolarOOMDPClass.py: Contains the SolarOOMDP class. 
 
-Author: Emily Reif
+Author: Emily Reif and David Abel
 '''
+
+# Python imports.
+import math as m
+import numpy
+import datetime
+import random
+import scipy.integrate as integrate
 
 # simple_rl imports.
 from simple_rl.mdp.oomdp.OOMDPClass import OOMDP
 from simple_rl.mdp.oomdp.OOMDPObjectClass import OOMDPObject
 from SolarOOMDPStateClass import SolarOOMDPState
-import math as m
-import numpy
-from pysolar import solar, radiation
-import datetime
-import random
-
+import solar_helpers as sh
 
 class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
 
     # Static constants.
-    ACTIONS = ["panelForwardALT", "panelBackALT", "doNothing"] # "panelForwardAZ", "panelBackAZ", 
-
-    # give altitiude and azimuth
-    ATTRIBUTES = ["angle_AZ", "angle_ALT", "month", "day", "hour", "minute", "latitude", "longitude"]
-
-
+    ACTIONS = ["panelForwardALT", "panelBackALT", "doNothing", "panelForwardAZ", "panelBackAZ"]
+    ATTRIBUTES = ["angle_AZ", "angle_ALT"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    def __init__(self, timestep=30, panel_step=.1, panel_start_angle=0, year=2016, month=11, day=4, hour=0, minute=0, latitude_deg = 51.5074, longitude_deg = 0.1278, img_dims = 64):
+    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=0, longitude_deg=0, img_dims = 16):
         # Global information
         self.latitude_deg = latitude_deg # positive in the northern hemisphere
         self.longitude_deg = longitude_deg # negative reckoning west from prime meridian in Greenwich, England
         self.step_panel = panel_step
         self.timestep = timestep
-        self.time = datetime.datetime(year, month, day, hour, minute)
-        self.img_dims = img_dims
-        self.day = day
+        self.reflective_index = reflective_index
 
-        init_state = self._create_state(90.0, 90.0, self.time, longitude_deg, latitude_deg)
+        # Time stuff.
+        self.init_time = date_time
+        self.time = date_time
+
+        # Image stuff.
+        self.img_dims = img_dims
+
+        # Make state and call super.
+        init_state = self._create_state(0.0, 0.0, self.init_time, longitude_deg, latitude_deg)
         OOMDP.__init__(self, SolarOOMDP.ACTIONS, self.objects, self._transition_func, self._reward_func, init_state=init_state)
 
+    def reset(self):
+        self.time = self.init_time
+        OOMDP.reset(self)
 
+    def _get_day(self):
+        return self.time.timetuple().tm_yday
 
     def _reward_func(self, state, action):
         '''
@@ -52,45 +61,37 @@ class SolarOOMDP(OOMDP):
             (float)
         '''
 
-        # Need to update altitude_deg to take into account our panel's rotation.
-        # However, we can only control rotation over the ROT/UD axes.
-        # So, decompose current altitude_deg into ROT/EW components using azimuth_deg.
-        # Then, add panel offset, and translate back.
-
         # Both altitude_deg and azimuth_deg are in degrees.
-        sun_altitude_deg = solar.GetAltitudeFast(self.latitude_deg, self.longitude_deg, self.time)
-        sun_azimuth_deg = solar.GetAzimuth(self.latitude_deg, self.longitude_deg, self.time)
+        sun_altitude_deg = sh._compute_sun_altitude(self.latitude_deg, self.longitude_deg, self.time)
+        sun_azimuth_deg = sh._compute_sun_azimuth(self.latitude_deg, self.longitude_deg, self.time)
 
-        rads = 0.0
-        # First, if the altitude is less than 0 (the sun is below the horizon), return 0.
-        if sun_altitude_deg > 0:
-            # The panel has two rotation offsets (rotation around the normal to the ground), and rotation around its own axis.
-            # Hopefully, it would learn to just make its normal rotation match that ground-truth azimuth angle,
-            # and make its other rotation equal 90 - altitude_deg.
+        # Panel stuff
+        panel_ns_deg = state.get_panel_angle_ALT()
+        panel_ew_deg = state.get_panel_angle_AZ()
 
-            # The difference between how we SHOULD have rotated the panel, and how we did.
-            # azimuth_panel_offset_rads = m.radians(sun_azimuth_deg - state.get_panel_angle_AZ())
+        # Compute direct radiation.
+        direct_rads = sh._compute_radiation_direct(self.time, sun_altitude_deg)
+        diffuse_rads = sh._compute_radiation_diffuse(self.time, self._get_day(), sun_altitude_deg)
+        reflective_rads = sh._compute_radiation_reflective(self.time, self._get_day(), self.reflective_index, sun_altitude_deg)
 
-            # Finally, the new altitude is the ground's altitude with the addition of the panel's
-            # altitude_deg_with_panel = sun_altitude_deg + state.get_panel_angle_ALT() * m.cos(azimuth_panel_offset_rads)
+        # Compute tilted component.
+        direct_tilt_factor = sh._compute_direct_radiation_tilt_factor(panel_ns_deg, panel_ew_deg, sun_altitude_deg, sun_azimuth_deg)
+        diffuse_tilt_factor = sh._compute_diffuse_radiation_tilt_factor(panel_ns_deg, panel_ew_deg)
+        reflective_tilt_factor = sh._compute_reflective_radiation_tilt_factor(panel_ns_deg, panel_ew_deg)
 
-            # Compute energy.
-            rads += _get_radiation_direct(self.time, sun_altitude_deg)
+        # Compute total.
+        reward = direct_rads * direct_tilt_factor + \
+                    diffuse_rads * diffuse_tilt_factor + \
+                    reflective_rads * reflective_tilt_factor
 
-        reward = self._sun_rads_to_tilted_panel_rads(rads, state.get_panel_angle_ALT()) / 1000.0
-
+        # Penalize for 
         if action != "doNothing":
-            reward -= 0.1
+            reward -= 5.0
 
         return reward
 
-    def _compute_declination(self):
-        term_one = (23.45 * m.pi) / 180
-        term_two = m.sin( (2*m.pi*(284 + self.day)) / 365)
-        return term_two * term_two
 
-
-    def _sun_rads_to_tilted_panel_rads(self, rads_at_loc, panel_alt):
+    def _sun_rads_to_tilted_panel_rads(self, rads_at_loc, sun_alt, sun_az, panel_alt, panel_az):
         '''
         Args:
             rads_at_loc (float)
@@ -105,20 +106,26 @@ class SolarOOMDP(OOMDP):
                 Andersen P (1980) Comments on "Calculation of monthly average insolation on tilted surfaces" by SA Klein.
                 Solar Energy: 25.
         '''
-        delta = self._compute_declination()
-        latitude = self.latitude_deg
-        omega_ss = numpy.arccos(-m.tan(m.radians(latitude)) * m.tan(delta))
+        
+        # Convert relevant params to radians.
+        panel_az_radians = m.radians(panel_az)
+        panel_alt_radians = m.radians(panel_alt)
+        
+        sun_alt_radians = m.radians(sun_alt)
+        sun_az_radians = m.radians(sun_az)
 
-        # Compute tilt ratio N/S.
-        tilt_ratio_numerator = m.cos(latitude - panel_alt) * m.cos(delta) * m.sin(omega_ss) + omega_ss * m.sin(latitude - panel_alt) * m.sin(delta)
-        tilt_ratio_denominator = m.cos(latitude) * m.cos(delta) * m.sin(omega_ss) + omega_ss * m.sin(latitude) * m.sin(delta)
-        tilt_ratio_ns = max((tilt_ratio_numerator / tilt_ratio_denominator), 0)
+        delta = m.radians(_compute_declination(self._get_day()))
+        lat_radians = m.radians(self.latitude_deg)
+        omega_s = numpy.arccos(-m.tan(lat_radians) * m.tan(delta))
 
-        # tilt_ratio_numerator = m.cos(latitude - panel_alt) * m.cos(delta) * m.sin(omega_ss) + omega_ss * m.sin(latitude - panel_alt) * m.sin(delta)
-        # tilt_ratio_denominator = m.cos(latitude) * m.cos(delta) * m.sin(omega_ss) + omega_ss * m.sin(latitude) * m.sin(delta)
-
-
-        panel_rads = rads_at_loc * tilt_ratio_ns
+        # This part is messed up.
+        A, B = _compute_a_b(lat_radians, panel_az_radians, panel_alt_radians, delta)
+        omega_rt, omega_st = _compute_omega_r_s(omega_s, A, B, panel_az_radians)
+        tilt_ratio_numer = integrate.quad(lambda x: m.cos(panel_alt_radians * x), omega_rt, omega_st)
+        tilt_ratio_denom = integrate.quad(lambda x: m.cos(sun_alt_radians * x), omega_s, omega_s + (omega_st - omega_rt))
+        tilt_ratio = 0.0 if tilt_ratio_denom[0] == 0.0 else max(tilt_ratio_numer[0] / tilt_ratio_denom[0], 0.0)
+        
+        panel_rads = rads_at_loc * tilt_ratio
 
         return panel_rads
 
@@ -131,39 +138,36 @@ class SolarOOMDP(OOMDP):
         Returns
             (OOMDP State)
         '''
-        # print "s", state
-
         _error_check(state, action)
         self.time += datetime.timedelta(minutes=self.timestep)
-        time = self.time
         state_angle_AZ = state.get_panel_angle_AZ()
         state_angle_ALT = state.get_panel_angle_ALT()
 
-        step = random.randint(self.step_panel - 1, self.step_panel + 1)
+        step = self.step_panel
 
         # If we move the panel forward, increment panel angle by one step
         if action == "panelForwardAZ":
             new_panel_angleAZ = state_angle_AZ + step
-            return self._create_state(new_panel_angleAZ, state_angle_ALT, time, self.longitude_deg, self.latitude_deg)
+            return self._create_state(new_panel_angleAZ, state_angle_ALT, self.time, self.longitude_deg, self.latitude_deg)
 
         # If we move the panel back, decrement panel angle by one step
         elif action == "panelBackAZ":
             new_panel_angleAZ = state_angle_AZ - step
-            return self._create_state(new_panel_angleAZ, state_angle_ALT, time, self.longitude_deg, self.latitude_deg)
+            return self._create_state(new_panel_angleAZ, state_angle_ALT, self.time, self.longitude_deg, self.latitude_deg)
 
         # If we move the panel forward, increment panel angle by one step
         if action == "panelForwardALT":
             new_panel_angle_ALT = state_angle_ALT + step
-            return self._create_state(state_angle_AZ, new_panel_angle_ALT, time, self.longitude_deg, self.latitude_deg)
+            return self._create_state(state_angle_AZ, new_panel_angle_ALT, self.time, self.longitude_deg, self.latitude_deg)
 
         # If we move the panel back, decrement panel angle by one step
         elif action == "panelBackALT":
             new_panel_angle_ALT = state_angle_ALT - step
-            return self._create_state(state_angle_AZ, new_panel_angle_ALT, time, self.longitude_deg, self.latitude_deg)
+            return self._create_state(state_angle_AZ, new_panel_angle_ALT, self.time, self.longitude_deg, self.latitude_deg)
 
         # If we do nothing, none of the angles change
         elif action == "doNothing":
-            return self._create_state(state_angle_AZ, state_angle_ALT, time, self.longitude_deg, self.latitude_deg)
+            return self._create_state(state_angle_AZ, state_angle_ALT, self.time, self.longitude_deg, self.latitude_deg)
 
         else:
             print "Error: Unrecognized action! (" + action + ")"
@@ -175,6 +179,9 @@ class SolarOOMDP(OOMDP):
             sun_angle (int)
             panel_angle_AZ (int)
             panel_angle_ALT (int)
+            t (datetime)
+            lon (float)
+            lat (float)
 
         Returns:
             (OOMDP State)
@@ -183,41 +190,25 @@ class SolarOOMDP(OOMDP):
 
         # Make agent.
         agent_attributes = {}
-        agent_attributes["angle_AZ"] = max(min(panel_angle_AZ,180),0)
-        agent_attributes["angle_ALT"] = max(min(panel_angle_ALT,180),0)
+        agent_attributes["angle_AZ"] = max(min(panel_angle_AZ,90),-90)
+        agent_attributes["angle_ALT"] = max(min(panel_angle_ALT,90),-90)
         agent = OOMDPObject(attributes=agent_attributes, name="agent")
         self.objects["agent"].append(agent)
 
         # Sun.
         sun_attributes = {}
-        sun_angle_AZ = solar.GetAzimuth(lat, lon, t)
-        sun_angle_ALT = solar.GetAltitudeFast(lat, lon, t)
-        # sun_attributes["angle_AZ"] = sun_angle_AZ
-        # sun_attributes["angle_ALT"] = sun_angle_ALT
-        image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT)
-        for i in range (self.img_dims):
-            for j in range (self.img_dims):
-                idx = i*self.img_dims + j
-                sun_attributes['pix' + str(i)] = image[i][j]
+        sun_angle_AZ = sh._compute_sun_azimuth(lat, lon, t)
+        sun_angle_ALT = sh._compute_sun_altitude(lat, lon, t)
+        sun_attributes["angle_AZ"] = sun_angle_AZ
+        sun_attributes["angle_ALT"] = sun_angle_ALT
+        # image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT)
+        # for i in range (self.img_dims):
+        #     for j in range (self.img_dims):
+        #         idx = i*self.img_dims + j
+        #         sun_attributes['pix' + str(i)] = image[i][j]
 
         sun = OOMDPObject(attributes=sun_attributes, name="sun")
         self.objects["sun"].append(sun)
-
-        # Time.
-        time_attributes = {}
-        time_attributes["month"] = t.month
-        time_attributes["day"] = t.day
-        time_attributes["hour"] = t.hour
-        time_attributes["minute"] = t.minute
-        time = OOMDPObject(attributes=time_attributes, name="time")
-        self.objects["time"].append(time)
-
-        # Long/Lat
-        pos_attributes = {}
-        pos_attributes["longitude"] = lon
-        pos_attributes["latitude"] = lat
-        pos = OOMDPObject(attributes=pos_attributes, name="worldPosition")
-        self.objects["worldPosition"].append(pos)
 
         return SolarOOMDPState(self.objects)
 
@@ -226,8 +217,8 @@ class SolarOOMDP(OOMDP):
         sun_dim = self.img_dims/16
 
         # For viewing purposes, we normalize between 0 and 1 on the x axis and 0 to .5 on the y axis
-        x = self.img_dims * (1 + math.sin(math.radians(sun_angle_AZ)))/2
-        y = self.img_dims * math.sin(math.radians(sun_angle_ALT))/2
+        x = self.img_dims * (1 + m.sin(m.radians(sun_angle_AZ)))/2
+        y = self.img_dims * m.sin(m.radians(sun_angle_ALT))/2
         image = [l[:] for l in [[0] * self.img_dims] * self.img_dims]
 
         # Make gaussian sun
@@ -236,7 +227,7 @@ class SolarOOMDP(OOMDP):
                 image[i][j] = self._gaussian(j, x, sun_dim) * self._gaussian(i, y, sun_dim)
 
         # Show image (for testing purposes)
-        self._show_image(image)
+        # self._show_image(image)
 
         return image
 
@@ -252,7 +243,7 @@ class SolarOOMDP(OOMDP):
     # Credit to http://stackoverflow.com/questions/14873203/plotting-of-1-dimensional-gaussian-distribution-function
     # TODO: fix ^
     def _gaussian(self, x, mu, sig):
-        return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+        return numpy.exp(-numpy.power(x - mu, 2.) / (2 * numpy.power(sig, 2.)))
 
     def __str__(self):
         return "solarmdp_" + "p-" + str(self.step_panel)
@@ -275,18 +266,6 @@ def _error_check(state, action):
         print "Error: the given state (" + str(state) + ") was not of the correct class."
         quit()
 
-
-# DIRECTLY FROM PYSOLAR (with different conditional)
-def _get_radiation_direct(utc_datetime, altitude_deg):
-    # from Masters, p. 412
-    if 5 < altitude_deg < 175:
-        day = solar.GetDayOfYear(utc_datetime)
-        flux = radiation.GetApparentExtraterrestrialFlux(day)
-        optical_depth = radiation.GetOpticalDepth(day)
-        air_mass_ratio = radiation.GetAirMassRatio(altitude_deg)
-        return flux * m.exp(-1 * optical_depth * air_mass_ratio)
-    else:
-        return 0.0
 
 def main():
     agent = {"angle": 0}

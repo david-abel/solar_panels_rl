@@ -5,9 +5,10 @@ SolarTrackerClass.py: Contains the SolarTracker class.
 class SolarTracker(object):
     ''' Class for a Solar Tracker '''
 
-    def __init__(self, tracker, panel_step):
+    def __init__(self, tracker, panel_step, dual_axis=False):
     	self.tracker = tracker
     	self.panel_step = panel_step
+    	self.dual_axis = dual_axis
 
     def get_policy(self):
     	return self._policy
@@ -22,18 +23,28 @@ class SolarTracker(object):
 			(str): Action in the set SolarOOMDPClass.ACTIONS
 		'''
 
-		sun_az, sun_alt, panel_az, panel_alt = self.tracker(state)
+		sun_az, sun_alt, = self.tracker(state)
+		panel_az, panel_alt = state.get_panel_angle_AZ(), state.get_panel_angle_ALT()
 		
-		az_diff = sun_az - panel_az
-		alt_diff = sun_alt - panel_alt
+		az_diff = abs(sun_az - panel_az)
+		alt_diff = abs(sun_alt - panel_alt)
 
-		if abs(az_diff) < 5 and abs(alt_diff) < 5:
+		# This doesn't work! It's ***not*** just 
+
+		if az_diff <= self.panel_step and alt_diff <= self.panel_step:
 			return "doNothing"
-		# elif abs(az_diff) > abs(alt_diff) and az_diff > 0:
-			# return "panelForwardAZ"
-		# elif abs(az_diff) > abs(alt_diff) and az_diff < 0:
-			# return "panelBackAZ"
-		elif abs(az_diff) < abs(alt_diff) and alt_diff > 0:
-			return "panelForwardALT"
+		elif not self.dual_axis or alt_diff > az_diff:
+			# Single axis, only move altitude.
+			if sun_alt < panel_alt:
+				# Sun is behind, tilt back.
+				return "panelForwardALT"
+			else:
+				# Sun is in front, tilt forward.
+				return "panelBackALT"
+		elif sun_az < panel_az:
+			# Sun is behind, rotate back.
+			return "panelForwardAZ"
 		else:
+			# Sun is in front, rotate back.
 			return "panelBackALT"
+
