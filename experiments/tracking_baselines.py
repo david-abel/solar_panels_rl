@@ -8,9 +8,10 @@ Contains tracking functions for computing the location of the sun, primarily fro
 '''
 
 # Python libs.
-import math
+import math as m
+import numpy
 
-def _compute_new_times(year, month, day, hour, delta_t):
+def _compute_new_times(year, month, day, hour):
 	'''
 	Args:
 		Same as algorithms below
@@ -28,6 +29,8 @@ def _compute_new_times(year, month, day, hour, delta_t):
 		year -= 1
 	time = int(365.25 * (year - 2000)) + int(30.6001 * (month + 1)) \
 		- int(0.01 * year) + day + 0.0416667* hour - 21958
+	
+	delta_t = 96.4 + 0.00158 * time
 
 	rot_ind_time = time + 1.1574 * 10**(-5) * delta_t
 
@@ -56,7 +59,7 @@ def tracker_from_state_info(state):
 
 	return sun_az, sun_alt
 
-def tracker_from_day_time_loc(state):
+def tracker_from_day_time_loc(state, tracker):
 	'''
 	Args:
 		state (SolarOOMDP state): contains the year, month, hour etc.
@@ -67,7 +70,7 @@ def tracker_from_day_time_loc(state):
 
 	# Get relevant data.
 	year, month, hour, day, = state.get_year(), state.get_month(), state.get_hour(), state.get_day()
-	delta_t, longitude, latitude = state.get_delta_t(), state.get_longitude(), state.get_latitude()
+	longitude, latitude = state.get_longitude(), state.get_latitude()
 
 	# Use tracker to compute sun vector.
 	sun_az, sun_alt = tracker(year, month, hour, day, delta_t, longitude, latitude)
@@ -77,18 +80,11 @@ def tracker_from_day_time_loc(state):
 def grena_tracker(year, month, hour, day, delta_t, longitude, latitude):
 	pass
 
-def simple_tracker(year, month, hour, day, delta_t, longitude, latitude):
+def simple_tracker(state, simple=True):
 	'''
 	Args:
-		year (int)
-		month (int)
-		hour (int)
-		delta_t (int): Difference between Terrestrial Time and Universal Time
-		longitude (float): WGS84
-		latitude (float): WGS84
-
-	Notes:
-		Algorithm One from [Grena 2012].
+		state (OOMDPstate)
+		simple (boolean): If true, uses Algorithm One from [Grena 2012], else uses Algorithm two
 
 	Returns:
 		(5-tuple):
@@ -98,26 +94,51 @@ def simple_tracker(year, month, hour, day, delta_t, longitude, latitude):
 			zenith:
 			azimuth:
 	'''
-	year, month, time, rot_ind_time = _compute_new_times(year, month, day, hour, delta_t)
+	year, month, day, hour = state.get_year(), state.get_month(), state.get_day(), state.get_hour()
+	latitude, longitude = state.get_latitude(), state.get_longitude()
+	year, month, time, rot_ind_time = _compute_new_times(year, month, day, hour)
 
 	angular_freq = 0.017202786 * day**(-1)
 
 	# Global Coordinate: Alpha
 	right_asc = -1.3888 + 1.7202792 * 10**(-2)*rot_ind_time \
-		+ 3.199 * 10**(-2) * math.sin(angular_freq * rot_ind_time) \
-		- 2.65 * 10**(-3) * math.cos(angular_freq * rot_ind_time) \
-		+ 4.050 * 10**(-2) * math.sin(2 * angular_freq * rot_ind_time) \
-		+ 1.525 * 10**(-2) * math.cos(2 * angular_freq * rot_ind_time)
+		+ 3.199 * 10**(-2) * m.sin(angular_freq * rot_ind_time) \
+		- 2.65 * 10**(-3) * m.cos(angular_freq * rot_ind_time) \
+		+ 4.050 * 10**(-2) * m.sin(2 * angular_freq * rot_ind_time) \
+		+ 1.525 * 10**(-2) * m.cos(2 * angular_freq * rot_ind_time)
 
 	# Global Coordinate: Delta
-	declination = 6.57 * 10**(-3) + 7.347 * 10**(-2) * math.sin(angular_freq * rot_ind_time) \
-	 	-3.9919 * 10**(-1) * math.cos(angular_freq * rot_ind_time) + 7.3 * 10 ** (-4) * math.sin(2 * angular_freq * rot_ind_time) \
-	 	- 6.60 * 10**(-3) * math.cos(2 * angular_freq * rot_ind_time)
+	declination = 6.57 * 10**(-3) + 7.347 * 10**(-2) * m.sin(angular_freq * rot_ind_time) \
+	 	-3.9919 * 10**(-1) * m.cos(angular_freq * rot_ind_time) + 7.3 * 10 ** (-4) * m.sin(2 * angular_freq * rot_ind_time) \
+	 	- 6.60 * 10**(-3) * m.cos(2 * angular_freq * rot_ind_time)
 
 	# Local Coordinate: H
 	hour_angle = 1.75283 + 6.3003881 * time + longitude - right_asc
 
-	return right_asc, declination, hour_angle
+	# Mod stuff.
+	right_asc = right_asc % 2 * m.pi
+	hour_angle = ((hour_angle + m.pi) % 2 * m.pi) - m.pi
+
+	altitude_deg, azimuth_deg = _asc_decl_ha_to_alt_az(right_asc, declination, hour_angle, latitude)
+
+	# When state has this stuff.
+	sun_az = state.get_sun_angle_AZ()
+	sun_alt = state.get_sun_angle_ALT()
+	print "sun, estimate", sun_az, sun_alt, azimuth_deg, altitude_deg
+
+	return right_asc, hour_angle
+
+def _asc_decl_ha_to_alt_az(right_asc, declination, hour_angle, latitude):
+	latitude_radians = m.radians(latitude)
+	alt_temp = m.sin(declination)*m.sin(latitude_radians)+m.cos(declination)*m.cos(latitude_radians)*m.cos(hour_angle)
+	altitude = numpy.arcsin(alt_temp)
+
+	az_temp = (m.sin(declination) - m.sin(altitude) * m.sin(latitude_radians)) / (m.cos(altitude)*m.cos(latitude_radians))
+	azimuth = numpy.arccos(az_temp)
+	if m.sin(hour_angle) >= 0:
+		azimuth = 360 - azimuth
+
+	return m.degrees(altitude), m.degrees(azimuth)
 
 def main():
 	simple_tracker(year=2060, month=1, hour=13, day=26, delta_t=0, longitude=.1, latitude=-.2)

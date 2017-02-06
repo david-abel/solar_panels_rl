@@ -86,7 +86,7 @@ class SolarOOMDP(OOMDP):
 
         # Penalize for 
         if action != "doNothing":
-            reward -= 5.0
+            reward -= 10.0
 
         return reward
 
@@ -210,7 +210,7 @@ class SolarOOMDP(OOMDP):
         sun = OOMDPObject(attributes=sun_attributes, name="sun")
         self.objects["sun"].append(sun)
 
-        return SolarOOMDPState(self.objects)
+        return SolarOOMDPState(self.objects, date_time=t, longitude=lon, latitude=lat)
 
     def _create_sun_image(self, sun_angle_AZ, sun_angle_ALT):
         # Create image of the sun, given alt and az

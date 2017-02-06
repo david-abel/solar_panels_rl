@@ -18,16 +18,23 @@ from SolarTrackerClass import SolarTracker
 import tracking_baselines as tb
 
 def main():
+
+
+    # Todos:
+        # Get the simple/grena trackers to output altitude/azimuth
+        # Write the policy for the trackers:
+            # > Given the altitude/azimuth estimate, make the move that maximizes cos-similarity of sun-vec panel-vec
+
     # Setup MDP.
-    panel_step = 10
+    panel_step = 5
     date_time = datetime.datetime(day=5, hour=2, month=8, year=2015)
-    solar_mdp = SolarOOMDP(date_time, timestep=0.1, panel_step=panel_step)
+    solar_mdp = SolarOOMDP(date_time, timestep=1, panel_step=panel_step)
     actions = solar_mdp.get_actions()
     gamma = solar_mdp.get_gamma()
 
     dual_axis = True
 
-    # Setup fixed agent.
+    # Setup fixed agents.
     static_agent = FixedPolicyAgent(tb.static_policy)
     random_agent = RandomAgent(actions)
 
@@ -35,13 +42,21 @@ def main():
     good_tracker = SolarTracker(tb.tracker_from_state_info, panel_step=panel_step, dual_axis=dual_axis)
     good_baseline_tracker_agent = FixedPolicyAgent(good_tracker.get_policy(), name="optimal-tracker")
 
+    # Tracker from time/loc.
+    # grena_tracker = SolarTracker(tb.grena_tracker, panel_step=panel_step, dual_axis=dual_axis)
+    # grena_tracker_agent = FixedPolicyAgent(grena_tracker.get_policy(), name="grena-tracker")
+
+    # Simple tracker from time/loc.
+    simple_tracker = SolarTracker(tb.simple_tracker, panel_step=panel_step, dual_axis=dual_axis)
+    simple_tracker_agent = FixedPolicyAgent(simple_tracker.get_policy(), name="simple-tracker")
+
     # Setup RL agents.
     lin_approx_agent_rbf = LinearApproxQLearnerAgent(actions, alpha=0.01, epsilon=0.1, gamma=gamma, rbf=True)
     lin_approx_agent = LinearApproxQLearnerAgent(actions, alpha=0.01, epsilon=0.1, gamma=gamma, rbf=False)
-    agents = [static_agent, random_agent, lin_approx_agent_rbf, lin_approx_agent]
+    agents = [good_baseline_tracker_agent, static_agent, lin_approx_agent, lin_approx_agent_rbf]
 
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=1, num_episodes=1, num_steps=60*10*24)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=5, num_episodes=1, num_steps=60*24*10)
 
 if __name__ == "__main__":
     main()

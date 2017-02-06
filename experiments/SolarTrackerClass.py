@@ -2,6 +2,12 @@
 SolarTrackerClass.py: Contains the SolarTracker class. 
 '''
 
+# Python imports.
+import numpy
+
+# Local imports.
+import solarOOMDP.solar_helpers as sh
+
 class SolarTracker(object):
     ''' Class for a Solar Tracker '''
 
@@ -23,28 +29,29 @@ class SolarTracker(object):
 			(str): Action in the set SolarOOMDPClass.ACTIONS
 		'''
 
+		# Compute sun vec.
 		sun_az, sun_alt, = self.tracker(state)
 		panel_az, panel_alt = state.get_panel_angle_AZ(), state.get_panel_angle_ALT()
-		
-		az_diff = abs(sun_az - panel_az)
-		alt_diff = abs(sun_alt - panel_alt)
+		sun_vec = sh._compute_sun_vector(sun_az, sun_alt)
 
-		# This doesn't work! It's ***not*** just 
+		# Placeholder vars.
+		max_cos_diff = 0
+		best_action = "doNothing"
+		action_effect_dict = {
+			"doNothing":(0,0),
+			"panelForwardALT":(self.panel_step, 0),
+			"panelForwardAZ":(0, self.panel_step),
+			"panelBackALT:":(-self.panel_step, 0),
+			"panelBackAZ":(0, -self.panel_step)
+		}
 
-		if az_diff <= self.panel_step and alt_diff <= self.panel_step:
-			return "doNothing"
-		elif not self.dual_axis or alt_diff > az_diff:
-			# Single axis, only move altitude.
-			if sun_alt < panel_alt:
-				# Sun is behind, tilt back.
-				return "panelForwardALT"
-			else:
-				# Sun is in front, tilt forward.
-				return "panelBackALT"
-		elif sun_az < panel_az:
-			# Sun is behind, rotate back.
-			return "panelForwardAZ"
-		else:
-			# Sun is in front, rotate back.
-			return "panelBackALT"
+		# Find action that minimizes cos difference to estimate of sun vector.
+		for action in action_effect_dict.keys():
+			delta_alt, delta_az = action_effect_dict[action]
+			panel_vec = sh._compute_panel_normal_vector(panel_alt + delta_alt, panel_az + delta_az)
+			cos_diff = numpy.dot(sun_vec, panel_vec)
+			if cos_diff > max_cos_diff:
+				best_action = action
+
+		return action
 

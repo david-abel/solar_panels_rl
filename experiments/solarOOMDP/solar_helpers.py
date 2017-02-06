@@ -11,7 +11,7 @@ def _compute_sun_altitude(latitude_deg, longitude_deg, time):
 def _compute_sun_azimuth(latitude_deg, longitude_deg, time):
     return solar.GetAzimuth(latitude_deg, longitude_deg, time)
 
-# --- Direct Radiation ---
+# --- Radiation hitting the surface of the Earth ---
 
 def _compute_radiation_direct(time, sun_altitude_deg):
     return _get_radiation_direct(time, sun_altitude_deg)
@@ -73,9 +73,7 @@ def _compute_diffuse_radiation_tilt_factor(panel_ns_deg, panel_ew_deg):
     dave_method = (1 - abs(panel_ns_deg) / 90.0) * (1 - abs(panel_ew_deg) / 90.0)
     masters_method = (m.cos(m.radians(abs(panel_ns_deg))) + m.cos(m.radians(abs(panel_ew_deg)))) / 2.0
 
-    # print panel_ns_deg, panel_ew_deg, dave_method, masters_method
     return dave_method
-
 
 def _compute_reflective_radiation_tilt_factor(panel_ns_deg, panel_ew_deg):
     return (2 - m.cos(m.radians(panel_ns_deg)) - m.cos(m.radians(panel_ew_deg)))
