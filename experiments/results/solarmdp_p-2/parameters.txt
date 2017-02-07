@@ -1,9 +1,10 @@
 (MDP)
 	solarmdp_p-2
 (Agents)
-	simple-tracker
+	greedy-tracker
+	fixed-policy
 	lin_q_approx-uniform
 (Params)
 	num_instances : 1
 	num_episodes : 1
-	num_steps : 14400
+	num_steps : 36000

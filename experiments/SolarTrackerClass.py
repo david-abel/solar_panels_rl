@@ -31,27 +31,30 @@ class SolarTracker(object):
 
 		# Compute sun vec.
 		sun_az, sun_alt, = self.tracker(state)
-		panel_az, panel_alt = state.get_panel_angle_AZ(), state.get_panel_angle_ALT()
+		panel_ew, panel_ns = state.get_panel_angle_ew(), state.get_panel_angle_ns()
 		sun_vec = sh._compute_sun_vector(sun_az, sun_alt)
 
 		# Placeholder vars.
-		max_cos_diff = 0
+		max_cos_sim = -1
 		best_action = "doNothing"
 		action_effect_dict = {
-			"doNothing":(0,0),
-			"panelForwardALT":(self.panel_step, 0),
-			"panelForwardAZ":(0, self.panel_step),
-			"panelBackALT:":(-self.panel_step, 0),
-			"panelBackAZ":(0, -self.panel_step)
-		}
+				"doNothing":(0,0),
+				"panel_forward_ns":(self.panel_step, 0),
+				"panel_back_ns":(-self.panel_step, 0),
+			}
+
+		if self.dual_axis:
+			action_effect_dict["panel_forward_ew"] = (0, self.panel_step)
+			action_effect_dict["panel_back_ew"] =  (0, -self.panel_step)
 
 		# Find action that minimizes cos difference to estimate of sun vector.
 		for action in action_effect_dict.keys():
 			delta_alt, delta_az = action_effect_dict[action]
-			panel_vec = sh._compute_panel_normal_vector(panel_alt + delta_alt, panel_az + delta_az)
-			cos_diff = numpy.dot(sun_vec, panel_vec)
-			if cos_diff > max_cos_diff:
+			panel_vec = sh._compute_panel_normal_vector(panel_ns + delta_alt, panel_ew + delta_az)
+			cos_sim = numpy.dot(sun_vec, panel_vec)
+			if cos_sim > max_cos_sim:
 				best_action = action
+				max_cos_sim = cos_sim
 
 		return action
 
