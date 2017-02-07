@@ -40,7 +40,7 @@ class SolarTracker(object):
 		action_effect_dict = {
 				"doNothing":(0,0),
 				"panel_forward_ns":(self.panel_step, 0),
-				"panel_back_ns:":(-self.panel_step, 0),
+				"panel_back_ns":(-self.panel_step, 0),
 			}
 
 		if self.dual_axis:
