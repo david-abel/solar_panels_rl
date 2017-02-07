@@ -49,14 +49,20 @@ def _compute_direct_radiation_tilt_factor(panel_ns_deg, panel_ew_deg, sun_altitu
     return abs(cos_diff)
 
 def _compute_sun_vector(sun_altitude_deg, sun_azimuth_deg):
+    '''
+    Needs to be fixed.
+    '''
     sun_alt_radians, sun_az_radians = m.radians(sun_altitude_deg), m.radians(sun_azimuth_deg)
-    x = m.cos(m.pi - sun_az_radians)
+    x = m.sin(sun_alt_radians)
     y = - m.sin(sun_az_radians)
-    z = m.sin(sun_alt_radians)
+    z = m.cos(m.pi - sun_az_radians)
     
     return _normalize(x, y, z)
 
 def _compute_panel_normal_vector(panel_ns_deg, panel_ew_deg):
+    '''
+    Needs to be fixed.
+    '''
     panel_ns_radians, panel_ew_radians = m.radians(panel_ns_deg), m.radians(panel_ew_deg)
 
     x = m.sin(panel_ew_radians)

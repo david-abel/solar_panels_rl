@@ -15,6 +15,9 @@ class SolarOOMDPState(OOMDPState):
 
     # --- Time and Loc (for trackers) ---
 
+    def get_day_of_year(self):
+        return self.date_time.timetuple().tm_yday
+
     def get_year(self):
         return self.date_time.year
 
