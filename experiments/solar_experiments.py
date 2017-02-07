@@ -19,7 +19,6 @@ import tracking_baselines as tb
 
 def main():
 
-
     # Todos:
         # Get the simple/grena trackers to output altitude/azimuth
         # Write the policy for the trackers:
@@ -53,10 +52,10 @@ def main():
     # Setup RL agents.
     lin_approx_agent_rbf = LinearApproxQLearnerAgent(actions, alpha=0.01, epsilon=0.001, gamma=gamma, rbf=True)
     lin_approx_agent = LinearApproxQLearnerAgent(actions, alpha=0.01, epsilon=0.001, gamma=gamma, rbf=False)
-    agents = [simple_tracker_agent, lin_approx_agent_rbf]
+    agents = [good_baseline_tracker_agent, static_agent, lin_approx_agent_rbf]
 
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=1, num_episodes=1, num_steps=60*24*10)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=1, num_episodes=1, num_steps=60*24*25)
 
 if __name__ == "__main__":
     main()

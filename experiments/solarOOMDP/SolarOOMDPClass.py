@@ -21,8 +21,8 @@ class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
 
     # Static constants.
-    ACTIONS = ["panelForwardALT", "panelBackALT", "doNothing", "panelForwardAZ", "panelBackAZ"]
-    ATTRIBUTES = ["angle_AZ", "angle_ALT"]
+    ACTIONS = ["panel_forward_ns", "panel_back_ns", "doNothing", "panel_forward_ew", "panel_back_ew"]
+    ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
     def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=50, longitude_deg=-20, img_dims = 16):
@@ -41,7 +41,7 @@ class SolarOOMDP(OOMDP):
         self.img_dims = img_dims
 
         # Make state and call super.
-        init_state = self._create_state(0.0, 0.0, self.init_time, longitude_deg, latitude_deg)
+        init_state = self._create_state(0.0, -30.0, self.init_time, longitude_deg, latitude_deg)
         OOMDP.__init__(self, SolarOOMDP.ACTIONS, self.objects, self._transition_func, self._reward_func, init_state=init_state)
 
     def reset(self):
@@ -66,8 +66,8 @@ class SolarOOMDP(OOMDP):
         sun_azimuth_deg = sh._compute_sun_azimuth(self.latitude_deg, self.longitude_deg, self.time)
 
         # Panel stuff
-        panel_ns_deg = state.get_panel_angle_ALT()
-        panel_ew_deg = state.get_panel_angle_AZ()
+        panel_ns_deg = state.get_panel_angle_ew()
+        panel_ew_deg = state.get_panel_angle_ns()
 
         # Compute direct radiation.
         direct_rads = sh._compute_radiation_direct(self.time, sun_altitude_deg)
@@ -91,7 +91,7 @@ class SolarOOMDP(OOMDP):
         return reward
 
 
-    def _sun_rads_to_tilted_panel_rads(self, rads_at_loc, sun_alt, sun_az, panel_alt, panel_az):
+    def _sun_rads_to_tilted_panel_rads(self, rads_at_loc, sun_alt, sun_az, panel_ns, panel_ew):
         '''
         Args:
             rads_at_loc (float)
@@ -140,45 +140,45 @@ class SolarOOMDP(OOMDP):
         '''
         _error_check(state, action)
         self.time += datetime.timedelta(minutes=self.timestep)
-        state_angle_AZ = state.get_panel_angle_AZ()
-        state_angle_ALT = state.get_panel_angle_ALT()
+        state_angle_ns = state.get_panel_angle_ns()
+        state_angle_ew = state.get_panel_angle_ew()
 
         step = self.step_panel
 
         # If we move the panel forward, increment panel angle by one step
-        if action == "panelForwardAZ":
-            new_panel_angleAZ = state_angle_AZ + step
-            return self._create_state(new_panel_angleAZ, state_angle_ALT, self.time, self.longitude_deg, self.latitude_deg)
+        if action == "panel_forward_ew":
+            new_panel_angle_ew = state_angle_ew + step
+            return self._create_state(new_panel_angle_ew, state_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
 
         # If we move the panel back, decrement panel angle by one step
-        elif action == "panelBackAZ":
-            new_panel_angleAZ = state_angle_AZ - step
-            return self._create_state(new_panel_angleAZ, state_angle_ALT, self.time, self.longitude_deg, self.latitude_deg)
+        elif action == "panel_back_ew":
+            new_panel_angle_ew = state_angle_ew - step
+            return self._create_state(new_panel_angle_ew, state_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
 
         # If we move the panel forward, increment panel angle by one step
-        if action == "panelForwardALT":
-            new_panel_angle_ALT = state_angle_ALT + step
-            return self._create_state(state_angle_AZ, new_panel_angle_ALT, self.time, self.longitude_deg, self.latitude_deg)
+        if action == "panel_forward_ns":
+            new_panel_angle_ns = state_angle_ns + step
+            return self._create_state(state_angle_ew, new_panel_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
 
         # If we move the panel back, decrement panel angle by one step
-        elif action == "panelBackALT":
-            new_panel_angle_ALT = state_angle_ALT - step
-            return self._create_state(state_angle_AZ, new_panel_angle_ALT, self.time, self.longitude_deg, self.latitude_deg)
+        elif action == "panel_back_ns":
+            new_panel_angle_ns = state_angle_ns - step
+            return self._create_state(state_angle_ew, new_panel_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
 
         # If we do nothing, none of the angles change
         elif action == "doNothing":
-            return self._create_state(state_angle_AZ, state_angle_ALT, self.time, self.longitude_deg, self.latitude_deg)
+            return self._create_state(state_angle_ew, state_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
 
         else:
             print "Error: Unrecognized action! (" + action + ")"
             quit()
 
-    def _create_state(self, panel_angle_AZ, panel_angle_ALT, t, lon, lat):
+    def _create_state(self, panel_angle_ew, panel_angle_ns, t, lon, lat):
         '''
         Args:
             sun_angle (int)
-            panel_angle_AZ (int)
-            panel_angle_ALT (int)
+            panel_angle_ns (int)
+            panel_angle_ew (int)
             t (datetime)
             lon (float)
             lat (float)
@@ -190,8 +190,8 @@ class SolarOOMDP(OOMDP):
 
         # Make agent.
         agent_attributes = {}
-        agent_attributes["angle_AZ"] = max(min(panel_angle_AZ,90),-90)
-        agent_attributes["angle_ALT"] = max(min(panel_angle_ALT,90),-90)
+        agent_attributes["angle_ns"] = max(min(panel_angle_ew,90),-90)
+        agent_attributes["angle_ew"] = max(min(panel_angle_ns,90),-90)
         agent = OOMDPObject(attributes=agent_attributes, name="agent")
         self.objects["agent"].append(agent)
 
