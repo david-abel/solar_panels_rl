@@ -16,6 +16,7 @@ from simple_rl.mdp.oomdp.OOMDPClass import OOMDP
 from simple_rl.mdp.oomdp.OOMDPObjectClass import OOMDPObject
 from SolarOOMDPStateClass import SolarOOMDPState
 import solar_helpers as sh
+import matplotlib.pyplot as plt
 
 class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
@@ -25,7 +26,15 @@ class SolarOOMDP(OOMDP):
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=50, longitude_deg=-20, img_dims = 16):
+    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=50, longitude_deg=-20, img_dims = 16, dual_axis = True, image_mode = False):
+        
+        # Mode information
+        # If we are in 1-axis tracking mode, change actions accordingly.
+
+
+        # if we are in image mode, add pixels individually as attributes
+        self.image_mode = image_mode
+
         # Global information
         self.latitude_deg = latitude_deg # positive in the northern hemisphere
         self.longitude_deg = longitude_deg # negative reckoning west from prime meridian in Greenwich, England
@@ -199,13 +208,16 @@ class SolarOOMDP(OOMDP):
         sun_attributes = {}
         sun_angle_AZ = sh._compute_sun_azimuth(lat, lon, t)
         sun_angle_ALT = sh._compute_sun_altitude(lat, lon, t)
-        sun_attributes["angle_AZ"] = sun_angle_AZ
-        sun_attributes["angle_ALT"] = sun_angle_ALT
-        # image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT)
-        # for i in range (self.img_dims):
-        #     for j in range (self.img_dims):
-        #         idx = i*self.img_dims + j
-        #         sun_attributes['pix' + str(i)] = image[i][j]
+
+        if (self.image_mode):
+            image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT)
+            for i in range (self.img_dims):
+                for j in range (self.img_dims):
+                    idx = i*self.img_dims + j
+                    sun_attributes['pix' + str(i)] = image[i][j]
+        else:
+            sun_attributes["angle_AZ"] = sun_angle_AZ
+            sun_attributes["angle_ALT"] = sun_angle_ALT            
 
         sun = OOMDPObject(attributes=sun_attributes, name="sun")
         self.objects["sun"].append(sun)

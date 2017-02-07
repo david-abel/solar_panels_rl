@@ -186,7 +186,6 @@ def _final_step(right_asc, declination, hour_angle, latitude, longitude):
 
     # zenith = m.pi / 2.0 - ep
 
-
 def _asc_decl_ha_to_alt_az(right_asc, declination, hour_angle, latitude):
     latitude_radians = m.radians(latitude)
     alt_temp = m.sin(declination)*m.sin(latitude_radians)+m.cos(declination)*m.cos(latitude_radians)*m.cos(hour_angle)

@@ -24,14 +24,14 @@ def main():
         # Write the policy for the trackers:
             # > Given the altitude/azimuth estimate, make the move that maximizes cos-similarity of sun-vec panel-vec
 
+    dual_axis = False
+
     # Setup MDP.
     panel_step = 2
     date_time = datetime.datetime(day=5, hour=2, month=8, year=2015)
-    solar_mdp = SolarOOMDP(date_time, timestep=0.1, panel_step=panel_step)
+    solar_mdp = SolarOOMDP(date_time, timestep=1.0, panel_step=panel_step, dual_axis = dual_axis)
     actions = solar_mdp.get_actions()
     gamma = solar_mdp.get_gamma()
-
-    dual_axis = True
 
     # Setup fixed agents.
     static_agent = FixedPolicyAgent(tb.static_policy)
