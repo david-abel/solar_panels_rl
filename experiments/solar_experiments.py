@@ -51,12 +51,12 @@ def main():
     simple_tracker_agent = FixedPolicyAgent(simple_tracker.get_policy(), name="simple-tracker")
 
     # Setup RL agents.
-    lin_approx_agent_rbf = LinearApproxQLearnerAgent(actions, alpha=0.01, epsilon=0.05, gamma=gamma, rbf=True)
-    lin_approx_agent = LinearApproxQLearnerAgent(actions, alpha=0.01, epsilon=0.05, gamma=gamma, rbf=False)
-    agents = [good_baseline_tracker_agent, static_agent, lin_approx_agent_rbf]
+    lin_approx_agent_rbf = LinearApproxQLearnerAgent(actions, alpha=0.001, epsilon=0.05, gamma=gamma, rbf=True)
+    lin_approx_agent = LinearApproxQLearnerAgent(actions, alpha=0.001, epsilon=0.05, gamma=gamma, rbf=False)
+    agents = [good_baseline_tracker_agent, static_agent, lin_approx_agent_rbf, lin_approx_agent]
 
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=1, num_episodes=1, num_steps=60*24*1)
-
+    run_agents_on_mdp(agents, solar_mdp, num_instances=5, num_episodes=1, num_steps=10*60*24*10)
+    
 if __name__ == "__main__":
     main()

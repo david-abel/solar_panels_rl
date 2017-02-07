@@ -7,3 +7,5 @@
 *.pdf
 *.bbl
 *.csv
+*.txt
+.DS_Store
