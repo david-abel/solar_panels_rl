@@ -24,7 +24,7 @@ def main():
         # Write the policy for the trackers:
             # > Given the altitude/azimuth estimate, make the move that maximizes cos-similarity of sun-vec panel-vec
 
-    dual_axis = False
+    dual_axis = True
     image_mode = False
 
     # Setup MDP.
