@@ -25,11 +25,12 @@ def main():
             # > Given the altitude/azimuth estimate, make the move that maximizes cos-similarity of sun-vec panel-vec
 
     dual_axis = False
+    image_mode = False
 
     # Setup MDP.
     panel_step = 2
     date_time = datetime.datetime(day=5, hour=2, month=8, year=2015)
-    solar_mdp = SolarOOMDP(date_time, timestep=1.0, panel_step=panel_step, dual_axis = dual_axis)
+    solar_mdp = SolarOOMDP(date_time, timestep=10.0, panel_step=panel_step, dual_axis = dual_axis, image_mode = image_mode)
     actions = solar_mdp.get_actions()
     gamma = solar_mdp.get_gamma()
 
@@ -55,7 +56,7 @@ def main():
     agents = [good_baseline_tracker_agent, static_agent, lin_approx_agent_rbf]
 
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=1, num_episodes=1, num_steps=60*24*25)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=1, num_episodes=1, num_steps=60*24)
 
 if __name__ == "__main__":
     main()

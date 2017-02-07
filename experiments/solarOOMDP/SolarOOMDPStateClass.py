@@ -6,10 +6,12 @@ from simple_rl.mdp.oomdp.OOMDPStateClass import OOMDPState
 class SolarOOMDPState(OOMDPState):
     ''' Class for Solar Panel States '''
 
-    def __init__(self, objects, date_time, longitude, latitude):
+    def __init__(self, objects, date_time, longitude, latitude, sun_angle_AZ, sun_angle_ALT):
         self.date_time = date_time
         self.longitude = longitude
         self.latitude = latitude
+        self.sun_angle_AZ = sun_angle_AZ
+        self.sun_angle_ALT = sun_angle_ALT
         OOMDPState.__init__(self, objects=objects)
 
 
@@ -39,10 +41,10 @@ class SolarOOMDPState(OOMDPState):
     # --- State Attributes ---
 
     def get_sun_angle_AZ(self):
-        return self.objects["sun"][0]["angle_AZ"] * 1
+        return self.sun_angle_AZ
 
     def get_sun_angle_ALT(self):
-        return self.objects["sun"][0]["angle_ALT"] * 1
+        return self.sun_angle_ALT
 
     def get_panel_angle_ew(self):
         return self.objects["agent"][0]["angle_ns"] * 1
