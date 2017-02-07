@@ -124,7 +124,6 @@ def simple_tracker(state, simple=True):
 	# When state has this stuff.
 	sun_az = state.get_sun_angle_AZ()
 	sun_alt = state.get_sun_angle_ALT()
-	print "sun, estimate", sun_az, sun_alt, azimuth_deg, altitude_deg
 
 	return right_asc, hour_angle
 

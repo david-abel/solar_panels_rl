@@ -1,8 +1,0 @@
-(MDP)
-	solarmdp_p-10
-(Agents)
-	linear-uniform
-(Params)
-	num_instances : 50
-	num_episodes : 1
-	num_steps : 120

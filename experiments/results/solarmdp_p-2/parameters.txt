@@ -1,10 +1,9 @@
 (MDP)
 	solarmdp_p-2
 (Agents)
-	fixed-policy
-	linear-uniform-rbf-uniform
-	optimal-tracker
+	simple-tracker
+	lin_q_approx-uniform
 (Params)
-	num_instances : 5
+	num_instances : 1
 	num_episodes : 1
 	num_steps : 14400
