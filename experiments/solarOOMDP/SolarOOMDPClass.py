@@ -216,6 +216,11 @@ class SolarOOMDP(OOMDP):
                     idx = i*self.img_dims + j
                     sun_attributes['pix' + str(i)] = image[i][j]    
 
+        # Add this stuff as another property in the state (like date_time, ect)
+        else:
+            sun_attributes["angle_ew"] = sun_angle_AZ
+            sun_attributes["angle_ALT"] = sun_angle_ALT  
+
         sun = OOMDPObject(attributes=sun_attributes, name="sun")
         self.objects["sun"].append(sun)
 

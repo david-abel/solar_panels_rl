@@ -30,7 +30,7 @@ def main():
     # Setup MDP.
     panel_step = 2
     date_time = datetime.datetime(day=5, hour=2, month=8, year=2015)
-    solar_mdp = SolarOOMDP(date_time, timestep=10.0, panel_step=panel_step, dual_axis = dual_axis, image_mode = image_mode)
+    solar_mdp = SolarOOMDP(date_time, timestep=1.0, panel_step=panel_step, dual_axis = dual_axis, image_mode = image_mode)
     actions = solar_mdp.get_actions()
     gamma = solar_mdp.get_gamma()
 
@@ -51,12 +51,12 @@ def main():
     simple_tracker_agent = FixedPolicyAgent(simple_tracker.get_policy(), name="simple-tracker")
 
     # Setup RL agents.
-    lin_approx_agent_rbf = LinearApproxQLearnerAgent(actions, alpha=0.01, epsilon=0.001, gamma=gamma, rbf=True)
-    lin_approx_agent = LinearApproxQLearnerAgent(actions, alpha=0.01, epsilon=0.001, gamma=gamma, rbf=False)
+    lin_approx_agent_rbf = LinearApproxQLearnerAgent(actions, alpha=0.01, epsilon=0.05, gamma=gamma, rbf=True)
+    lin_approx_agent = LinearApproxQLearnerAgent(actions, alpha=0.01, epsilon=0.05, gamma=gamma, rbf=False)
     agents = [good_baseline_tracker_agent, static_agent, lin_approx_agent_rbf]
 
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=1, num_episodes=1, num_steps=60*24)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=1, num_episodes=1, num_steps=60*24*1)
 
 if __name__ == "__main__":
     main()
