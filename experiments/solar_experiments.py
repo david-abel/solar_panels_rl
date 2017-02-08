@@ -21,11 +21,9 @@ def main():
 
     # Todos:
         # Get the simple/grena trackers to output altitude/azimuth
-        # Write the policy for the trackers:
-            # > Given the altitude/azimuth estimate, make the move that maximizes cos-similarity of sun-vec panel-vec
 
     dual_axis = True
-    image_mode = False
+    image_mode = True
 
     # Setup MDP.
     panel_step = 2
@@ -51,12 +49,12 @@ def main():
     simple_tracker_agent = FixedPolicyAgent(simple_tracker.get_policy(), name="simple-tracker")
 
     # Setup RL agents.
-    lin_approx_agent_rbf = LinearApproxQLearnerAgent(actions, alpha=0.001, epsilon=0.05, gamma=gamma, rbf=True)
+    lin_approx_agent_rbf = LinearApproxQLearnerAgent(actions, alpha=0.01, epsilon=0.1, gamma=gamma, rbf=True)
     lin_approx_agent = LinearApproxQLearnerAgent(actions, alpha=0.001, epsilon=0.05, gamma=gamma, rbf=False)
-    agents = [good_baseline_tracker_agent, static_agent, lin_approx_agent_rbf, lin_approx_agent]
+    agents = [good_baseline_tracker_agent, static_agent, lin_approx_agent_rbf]
 
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=5, num_episodes=1, num_steps=10*60*24*10)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=5, num_episodes=1, num_steps=5*60*24) #*10)
     
 if __name__ == "__main__":
     main()

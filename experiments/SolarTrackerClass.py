@@ -36,9 +36,9 @@ class SolarTracker(object):
 
 		# Placeholder vars.
 		max_cos_sim = -1
-		best_action = "doNothing"
+		best_action = "do_nothing"
 		action_effect_dict = {
-				"doNothing":(0,0),
+				"do_nothing":(0,0),
 				"panel_forward_ns":(self.panel_step, 0),
 				"panel_back_ns":(-self.panel_step, 0),
 			}
