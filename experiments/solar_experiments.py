@@ -56,7 +56,7 @@ def main():
     agents = [good_baseline_tracker_agent, static_agent, lin_approx_agent_rbf, lin_approx_agent]
 
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=5, num_episodes=1, num_steps=10*60*24*10)
-    
+    run_agents_on_mdp(agents, solar_mdp, num_instances=5, num_episodes=1, num_steps=10*60*24)
+
 if __name__ == "__main__":
     main()
