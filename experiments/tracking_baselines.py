@@ -10,6 +10,9 @@ Contains tracking functions for computing the location of the sun, primarily fro
 # Python libs.
 import math as m
 import numpy
+from pysolar import solar
+
+from solarOOMDP import solar_helpers as sh
 
 def _compute_new_times(year, month, day, hour):
     '''
@@ -27,10 +30,11 @@ def _compute_new_times(year, month, day, hour):
     if month <= 2:
         month += 12
         year -= 1
+
     time = int(365.25 * (year - 2000)) + int(30.6001 * (month + 1)) \
         - int(0.01 * year) + day + 0.0416667* hour - 21958
     
-    delta_t = 96.4 + 0.00158 * time
+    delta_t = 96.4 + 0.00158 * time # Diff between UT and TT (in seconds). Seems right.
 
     rot_ind_time = time + 1.1574 * 10**(-5) * delta_t
 
@@ -97,8 +101,9 @@ def simple_tracker(state, simple=True):
             azimuth:
     '''
     year, month, day, hour = state.get_year(), state.get_month(), state.get_day_of_year(), state.get_hour()
-    latitude, longitude = state.get_latitude(), state.get_longitude()
-    
+    latitude_deg, longitude_deg = state.get_latitude(), state.get_longitude()
+    latitude_rad, longitude_rad = m.radians(latitude_deg), m.radians(longitude_deg)
+
     year, month, time, rot_ind_time = _compute_new_times(year, month, day, hour)
 
     angular_freq = 0.017202786 * day**(-1)
@@ -111,27 +116,30 @@ def simple_tracker(state, simple=True):
         + 1.525 * 10**(-2) * m.cos(2 * angular_freq * rot_ind_time)
 
     # Global Coordinate: Delta
-    declination = 6.57 * 10**(-3) + 7.347 * 10**(-2) * m.sin(angular_freq * rot_ind_time) \
+    declination_rad = 6.57 * 10**(-3) + 7.347 * 10**(-2) * m.sin(angular_freq * rot_ind_time) \
         -3.9919 * 10**(-1) * m.cos(angular_freq * rot_ind_time) + 7.3 * 10 ** (-4) * m.sin(2 * angular_freq * rot_ind_time) \
         - 6.60 * 10**(-3) * m.cos(2 * angular_freq * rot_ind_time)
 
     # Local Coordinate: H
-    hour_angle = 1.75283 + 6.3003881 * time + longitude - right_asc
+    hour_angle = 1.75283 + 6.3003881 * time + longitude_rad - right_asc
 
     # Mod stuff.
     right_asc = right_asc % 2 * m.pi
     hour_angle = ((hour_angle + m.pi) % 2 * m.pi) - m.pi
 
+    first_term = m.cos(latitude_rad) * m.cos(declination_rad) * m.cos(m.radians(hour_angle))
+    second_term = m.sin(latitude_rad) * m.sin(declination_rad)
+    altitude = m.degrees(m.asin(first_term + second_term))
+
+    # "True"
+    true_declination_rad = m.radians(solar.GetDeclination(day))
+    true_H = solar.GetHourAngle(state.get_date_time(), longitude_deg)
+
     # Dave: Pretty convinced everything up to here is right.
-
-    az, zen = _final_step(right_asc, declination, hour_angle, latitude, longitude)
-
-    # This is the step that seems whacky.
-    # altitude_deg, azimuth_deg = _asc_decl_ha_to_alt_az(right_asc, declination, hour_angle, latitude)
-
-    # When state has this stuff.
     sun_az = state.get_sun_angle_AZ()
     sun_alt = state.get_sun_angle_ALT()
+
+    az, zen = _final_step(right_asc, declination_rad, hour_angle, latitude_rad, longitude_rad)
 
     return 0, 0
 

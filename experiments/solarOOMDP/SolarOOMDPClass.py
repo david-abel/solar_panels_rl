@@ -26,7 +26,7 @@ class SolarOOMDP(OOMDP):
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=50, longitude_deg=-20, img_dims=16, dual_axis=True, image_mode=False):
+    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=100, longitude_deg=-5, img_dims=16, dual_axis=True, image_mode=False):
         
         # Mode information
         # If we are in 1-axis tracking mode, change actions accordingly.

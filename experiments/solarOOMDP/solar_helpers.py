@@ -65,9 +65,6 @@ def _compute_sun_vector(sun_altitude_deg, sun_azimuth_deg):
     return _normalize(x, y, z)
 
 def _compute_panel_normal_vector(panel_ns_deg, panel_ew_deg):
-    '''
-    Needs to be fixed.
-    '''
     panel_ns_radians, panel_ew_radians = m.radians(panel_ns_deg), m.radians(panel_ew_deg)
 
     # Compute panel normal.
@@ -82,13 +79,22 @@ def _normalize(x, y, z):
     return numpy.array([x / tot, y / tot, z / tot])
 
 def _compute_diffuse_radiation_tilt_factor(panel_ns_deg, panel_ew_deg):
-    dave_method = (1 - abs(panel_ns_deg) / 90.0) * (1 - abs(panel_ew_deg) / 90.0)
-    masters_method = (m.cos(m.radians(abs(panel_ns_deg))) + m.cos(m.radians(abs(panel_ew_deg)))) / 2.0
+    '''
+    Args:
+        panel_ns_deg (float)
+        panel_ew_deg (float)
 
-    return dave_method
+    Returns:
+        (float): The diffuse radiation tilt factor.
+    '''
+    ns_radians = m.radians(abs(panel_ns_deg))
+    ew_radians = m.radians(abs(panel_ew_deg))
+    diffuse_radiation_angle_factor = (m.cos(ns_radians) + m.cos(ew_radians)) / 2.0
+
+    return diffuse_radiation_angle_factor
 
 def _compute_reflective_radiation_tilt_factor(panel_ns_deg, panel_ew_deg):
-    return (2 - m.cos(m.radians(panel_ns_deg)) - m.cos(m.radians(panel_ew_deg)))
+    return (2 - m.cos(m.radians(panel_ns_deg)) - m.cos(m.radians(panel_ew_deg))) / 2.0
 
 # --- Misc. ---
 

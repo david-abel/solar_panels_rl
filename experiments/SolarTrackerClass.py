@@ -52,6 +52,7 @@ class SolarTracker(object):
 			delta_alt, delta_az = action_effect_dict[action]
 			panel_vec = sh._compute_panel_normal_vector(panel_ns + delta_alt, panel_ew + delta_az)
 			cos_sim = numpy.dot(sun_vec, panel_vec)
+
 			if cos_sim > max_cos_sim:
 				best_action = action
 				max_cos_sim = cos_sim

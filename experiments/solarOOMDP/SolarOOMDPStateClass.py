@@ -38,6 +38,9 @@ class SolarOOMDPState(OOMDPState):
     def get_latitude(self):
         return self.latitude
 
+    def get_date_time(self):
+        return self.date_time
+
     # --- State Attributes ---
 
     def get_sun_angle_AZ(self):
