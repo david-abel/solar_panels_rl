@@ -36,7 +36,7 @@ def _compute_new_times(year, month, day, hour):
 
     return year, month, time, rot_ind_time
 
-def static_policy(state, action="doNothing"):
+def static_policy(state, action="do_nothing"):
     return action
 
 # ==========================
@@ -80,7 +80,6 @@ def tracker_from_day_time_loc(state, tracker):
 def grena_tracker(state):
     year, month, day, hour = state.get_year(), state.get_month(), state.get_day(), state.get_hour()
     latitude, longitude = state.get_latitude(), state.get_longitude()
-
 
 
 def simple_tracker(state, simple=True):

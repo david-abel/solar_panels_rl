@@ -22,15 +22,16 @@ class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
 
     # Static constants.
-    ACTIONS = ["panel_forward_ns", "panel_back_ns", "doNothing", "panel_forward_ew", "panel_back_ew"]
+    ACTIONS = ["panel_forward_ns", "panel_back_ns", "do_nothing", "panel_forward_ew", "panel_back_ew"]
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=50, longitude_deg=-20, img_dims = 16, dual_axis = True, image_mode = False):
+    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=50, longitude_deg=-20, img_dims=16, dual_axis=True, image_mode=False):
         
         # Mode information
         # If we are in 1-axis tracking mode, change actions accordingly.
-
+        if not(dual_axis):
+            SolarOOMDP.ACTIONS = ["do_nothing", "panel_forward_ew", "panel_back_ew"]
 
         # if we are in image mode, add pixels individually as attributes
         self.image_mode = image_mode
@@ -94,7 +95,7 @@ class SolarOOMDP(OOMDP):
                     reflective_rads * reflective_tilt_factor
 
         # Penalize for 
-        if action != "doNothing":
+        if action != "do_nothing":
             reward -= 10.0
 
         return reward
@@ -175,7 +176,7 @@ class SolarOOMDP(OOMDP):
             return self._create_state(state_angle_ew, new_panel_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
 
         # If we do nothing, none of the angles change
-        elif action == "doNothing":
+        elif action == "do_nothing":
             return self._create_state(state_angle_ew, state_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
 
         else:
