@@ -200,8 +200,11 @@ class SolarOOMDP(OOMDP):
 
         # Make agent.
         agent_attributes = {}
-        agent_attributes["angle_ns"] = max(min(panel_angle_ew,90),-90)
-        agent_attributes["angle_ew"] = max(min(panel_angle_ns,90),-90)
+        bounded_panel_angle_ew = max(min(panel_angle_ew,90),-90)
+        bounded_panel_angle_ns = max(min(panel_angle_ns,90),-90)
+        agent_attributes["angle_ew"] = bounded_panel_angle_ew
+        agent_attributes["angle_ns"] = bounded_panel_angle_ns
+
         agent = OOMDPObject(attributes=agent_attributes, name="agent")
         self.objects["agent"].append(agent)
 
@@ -219,7 +222,7 @@ class SolarOOMDP(OOMDP):
 
         # Add this stuff as another property in the state (like date_time, ect)
         else:
-            sun_attributes["angle_ew"] = sun_angle_AZ
+            sun_attributes["angle_AZ"] = sun_angle_AZ
             sun_attributes["angle_ALT"] = sun_angle_ALT  
 
         sun = OOMDPObject(attributes=sun_attributes, name="sun")
