@@ -20,14 +20,14 @@ import tracking_baselines as tb
 def main():
 
     # Todos:
-        # Get the simple/grena trackers to output altitude/azimuth
+        # Get the grena tracker to output altitude/azimuth
 
     dual_axis = True
-    image_mode = True
+    image_mode = False
 
     # Setup MDP.
     panel_step = 2
-    date_time = datetime.datetime(day=5, hour=2, month=8, year=2055)
+    date_time = datetime.datetime(day=5, hour=2, month=8, year=2015)
     solar_mdp = SolarOOMDP(date_time, timestep=1.0, panel_step=panel_step, dual_axis = dual_axis, image_mode = image_mode)
     actions = solar_mdp.get_actions()
     gamma = solar_mdp.get_gamma()
@@ -41,20 +41,16 @@ def main():
     good_baseline_tracker_agent = FixedPolicyAgent(good_tracker.get_policy(), name="greedy-tracker")
 
     # Tracker from time/loc.
-    # grena_tracker = SolarTracker(tb.grena_tracker, panel_step=panel_step, dual_axis=dual_axis)
-    # grena_tracker_agent = FixedPolicyAgent(grena_tracker.get_policy(), name="grena-tracker")
-
-    # Simple tracker from time/loc.
-    simple_tracker = SolarTracker(tb.simple_tracker, panel_step=panel_step, dual_axis=dual_axis)
-    simple_tracker_agent = FixedPolicyAgent(simple_tracker.get_policy(), name="simple-tracker")
+    grena_tracker = SolarTracker(tb.grena_tracker, panel_step=panel_step, dual_axis=dual_axis)
+    grena_tracker_agent = FixedPolicyAgent(grena_tracker.get_policy(), name="grena-tracker")
 
     # Setup RL agents.
     lin_approx_agent_rbf = LinearApproxQLearnerAgent(actions, alpha=0.001, epsilon=0.1, gamma=gamma, rbf=True)
     lin_approx_agent = LinearApproxQLearnerAgent(actions, alpha=0.001, epsilon=0.1, gamma=gamma, rbf=False)
-    agents = [good_baseline_tracker_agent, static_agent, lin_approx_agent_rbf, lin_approx_agent]
+    agents = [grena_tracker_agent, static_agent, lin_approx_agent, lin_approx_agent_rbf]
 
     # Run experiments.
-    run_agents_on_mdp(agents, solar_mdp, num_instances=3, num_episodes=1, num_steps=60*24*5) #*10)
+    run_agents_on_mdp(agents, solar_mdp, num_instances=3, num_episodes=1, num_steps=60*24*10) #*10)
     
 if __name__ == "__main__":
     main()

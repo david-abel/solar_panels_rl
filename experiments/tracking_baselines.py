@@ -36,9 +36,9 @@ def _compute_new_times(year, month, day, hour):
     
     delta_t = 96.4 + 0.00158 * time # Diff between UT and TT (in seconds). Seems right.
 
-    rot_ind_time = time + 1.1574 * 10**(-5) * delta_t
+    te = time + 1.1574 * 10**(-5) * delta_t
 
-    return year, month, time, rot_ind_time
+    return year, month, time, te
 
 def static_policy(state, action="do_nothing"):
     return action
@@ -81,67 +81,85 @@ def tracker_from_day_time_loc(state, tracker):
 
     return sun_az, sun_alt
 
-def grena_tracker(state):
-    year, month, day, hour = state.get_year(), state.get_month(), state.get_day(), state.get_hour()
-    latitude, longitude = state.get_latitude(), state.get_longitude()
-
-
-def simple_tracker(state, simple=True):
+def grena_tracker(state, simple=True):
     '''
     Args:
         state (OOMDPstate)
         simple (boolean): If true, uses Algorithm One from [Grena 2012], else uses Algorithm two
 
     Returns:
-        (5-tuple):
-            right_ascension: "azimuthal angle measured from the ascending point"
-            declination: polar coordinates relative to earth's rotation
-            hour_angle: "the azimuthal angle of the sun with the polar axis aligned with the earth axis"
-            zenith:
-            azimuth:
+        (tuple): represents sun location.
+            altitude (float): degrees up from the horizon.
+            azimuth (float): degrees along the equator from north.
     '''
     year, month, day, hour = state.get_year(), state.get_month(), state.get_day_of_year(), state.get_hour()
     latitude_deg, longitude_deg = state.get_latitude(), state.get_longitude()
     latitude_rad, longitude_rad = m.radians(latitude_deg), m.radians(longitude_deg)
 
-    year, month, time, rot_ind_time = _compute_new_times(year, month, day, hour)
+    hour = hour
+    # year, month, time, rot_ind_time = _compute_new_times(year, month, day, hour)
 
-    angular_freq = 0.017202786 * day**(-1)
+    pressure = 1.0
+    temperature = 15.0
 
-    # Global Coordinate: Alpha
-    right_asc = -1.3888 + 1.7202792 * 10**(-2)*rot_ind_time \
-        + 3.199 * 10**(-2) * m.sin(angular_freq * rot_ind_time) \
-        - 2.65 * 10**(-3) * m.cos(angular_freq * rot_ind_time) \
-        + 4.05 * 10**(-2) * m.sin(2 * angular_freq * rot_ind_time) \
-        + 1.525 * 10**(-2) * m.cos(2 * angular_freq * rot_ind_time)
+    t = int(365.25*float(year-2000) + int(30.6001*float(month+1)) - int(0.01*float(year)) + day) + 0.0416667*hour - 21958.0
+    te = t + 1.1574e-5*70;
 
-    # Global Coordinate: Delta
-    declination_rad = 6.57 * 10**(-3) + 7.347 * 10**(-2) * m.sin(angular_freq * rot_ind_time) \
-        -3.9919 * 10**(-1) * m.cos(angular_freq * rot_ind_time) + 7.3 * 10 ** (-4) * m.sin(2 * angular_freq * rot_ind_time) \
-        - 6.60 * 10**(-3) * m.cos(2 * angular_freq * rot_ind_time)
+    wte = 0.017202786*te;
+    s1, c1 = m.sin(wte), m.cos(wte)
+    s2 = 2 *s1 *c1
+    c2 = (c1 + s1) * (c1 - s1)
+    s3 = s2*c1 + c2*s1
+    c3 = c2*c1 - s2*s1
+    s4 = 2.0*s2*c2
+    c4 = (c2+s2)*(c2-s2)
 
-    # Local Coordinate: H
-    hour_angle = 1.75283 + 6.3003881 * time + longitude_rad - right_asc
+    pi_2 = 2 * m.pi
+    pi_ov_2 = m.pi / 2.0
 
-    # Mod stuff.
-    right_asc = right_asc % 2 * m.pi
-    hour_angle = ((hour_angle + m.pi) % 2 * m.pi) - m.pi
+    right_asc = -1.38880 + 1.72027920e-2*te + 3.199e-2*s1 - 2.65e-3*c1 + 4.050e-2*s2 + 1.525e-2*c2 + 1.33e-3*s3 + 3.8e-4*c3 + 7.3e-4*s4 + 6.2e-4*c4;
+    right_asc = right_asc % pi_2
+    if (right_asc < 0.0):
+        right_asc += pi_2
+    decl = 6.57e-3 + 7.347e-2*s1 - 3.9919e-1*c1 + 7.3e-4*s2 - 6.60e-3*c2 + 1.50e-3*s3 - 2.58e-3*c3 + 6e-5*s4 - 1.3e-4*c4 + 0.2967
+    hour_angle = 1.75283 + 6.3003881*t + longitude_rad - right_asc
+    hour_angle = ((hour_angle + m.pi) % pi_2) - m.pi
+    
+    if (hour_angle < -m.pi):
+        hour_angle += pi_2
 
-    first_term = m.cos(latitude_rad) * m.cos(declination_rad) * m.cos(m.radians(hour_angle))
-    second_term = m.sin(latitude_rad) * m.sin(declination_rad)
-    altitude = m.degrees(m.asin(first_term + second_term))
+    sp = m.sin(latitude_rad);
+    cp = m.sqrt((1-sp*sp));
+    sd = m.sin(decl);
+    cd = m.sqrt(1-sd*sd);
+    sH = m.sin(hour_angle);
+    cH = m.cos(hour_angle);
+    se0 = sp*sd + cp*cd*cH;
+    ep = m.asin(se0) - 4.26e-5*m.sqrt(1.0-se0*se0);
+    azimuth_estimate = m.atan2(sH, cH*sp - sd*cp/cd);
 
-    # "True"
-    true_declination_rad = m.radians(solar.GetDeclination(day))
-    true_H = solar.GetHourAngle(state.get_date_time(), longitude_deg)
+    if (ep > 0.0):
+        Pressure = 1.0
+        De = (0.08422*Pressure) / ((273.0+temperature)*m.tan(ep + 0.003138/(ep + 0.08919)))
+    else:
+        De = 0.0
 
-    # Dave: Pretty convinced everything up to here is right.
+    zenith = pi_2 - ep - De;
+
+    # Flip axis direction.
+    azimuth_estimate = - ((360 + m.degrees(azimuth_estimate)) % 360)
+
+    # True.
     sun_az = state.get_sun_angle_AZ()
     sun_alt = state.get_sun_angle_ALT()
 
-    az, zen = _final_step(right_asc, declination_rad, hour_angle, latitude_rad, longitude_rad)
+    # Estimate altitude.
+    altitude_estimate = m.degrees(m.asin(m.cos(latitude_rad) * m.cos(decl) * \
+                        m.cos(hour_angle) + m.sin(latitude_rad) * m.sin(decl)))
 
-    return 0, 0
+    # print "altdiff, azdiff", abs(altitude_estimate - sun_alt), abs(azimuth_estimate - sun_az)
+
+    return altitude_estimate, azimuth_estimate
 
 def _final_step(right_asc, declination, hour_angle, latitude, longitude):
     '''
@@ -166,19 +184,19 @@ def _final_step(right_asc, declination, hour_angle, latitude, longitude):
     cH = m.cos(hour_angle)
     se0 = sp*sd + cp*cd*cH
     ep = numpy.arcsin(se0) - 4.26e-5*m.sqrt(1.0-se0*se0)
-    Azimuth = numpy.arctan2(sH, cH*sp - sd*cp/cd)
+    azimuth = numpy.arctan2(sH, cH*sp - sd*cp/cd)
 
     Pressure = 1.0
-    Temperature = 20
+    temperature = 20
     if (ep > 0.0):
-        De = (0.08422*Pressure) / ((273.0+Temperature)*m.tan(ep + 0.003138/(ep + 0.08919)));
+        De = (0.08422*Pressure) / ((273.0+temperature)*m.tan(ep + 0.003138/(ep + 0.08919)));
     else:
         De = 0.0;
 
-    PIM = 1.57079632679490
-    Zenith = PIM - ep - De;
+    m.piM = 1.57079632679490
+    zenith = m.piM - ep - De;
 
-    return m.degrees(Azimuth), m.degrees(Zenith)
+    return m.degrees(azimuth), m.degrees(zenith)
 
     # e_zero = m.asin(m.sin(lat_radians) * m.sin(declination) + m.cos(lat_radians) * m.cos(declination) * m.cos(hour_angle))
 
