@@ -46,16 +46,13 @@ class SolarTracker(object):
 		if self.dual_axis:
 			action_effect_dict["panel_forward_ew"] = (0, self.panel_step)
 			action_effect_dict["panel_back_ew"] =  (0, -self.panel_step)
-
 		# Find action that minimizes cos difference to estimate of sun vector.
 		for action in action_effect_dict.keys():
 			delta_alt, delta_az = action_effect_dict[action]
 			panel_vec = sh._compute_panel_normal_vector(panel_ns + delta_alt, panel_ew + delta_az)
 			cos_sim = numpy.dot(sun_vec, panel_vec)
-
 			if cos_sim > max_cos_sim:
 				best_action = action
 				max_cos_sim = cos_sim
-
-		return action
+		return best_action
 
