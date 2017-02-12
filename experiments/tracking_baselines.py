@@ -149,15 +149,9 @@ def grena_tracker(state, simple=True):
     # Flip axis direction.
     azimuth_estimate = - ((360 + m.degrees(azimuth_estimate)) % 360)
 
-    # True.
-    sun_az = state.get_sun_angle_AZ()
-    sun_alt = state.get_sun_angle_ALT()
-
     # Estimate altitude.
     altitude_estimate = m.degrees(m.asin(m.cos(latitude_rad) * m.cos(decl) * \
                         m.cos(hour_angle) + m.sin(latitude_rad) * m.sin(decl)))
-
-    # print "altdiff, azdiff", abs(altitude_estimate - sun_alt), abs(azimuth_estimate - sun_az)
 
     return altitude_estimate, azimuth_estimate
 

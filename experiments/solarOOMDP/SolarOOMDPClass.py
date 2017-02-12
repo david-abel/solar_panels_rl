@@ -6,17 +6,18 @@ Author: Emily Reif and David Abel
 
 # Python imports.
 import math as m
-import numpy
+import numpy as np
 import datetime
 import random
+import matplotlib.pyplot as plt
 import scipy.integrate as integrate
 
 # simple_rl imports.
 from simple_rl.mdp.oomdp.OOMDPClass import OOMDP
 from simple_rl.mdp.oomdp.OOMDPObjectClass import OOMDPObject
 from SolarOOMDPStateClass import SolarOOMDPState
+from CloudClass import Cloud
 import solar_helpers as sh
-import matplotlib.pyplot as plt
 
 class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
@@ -26,40 +27,91 @@ class SolarOOMDP(OOMDP):
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=100, longitude_deg=-5, img_dims=16, dual_axis=True, image_mode=False):
+    def __init__(self, date_time, timestep=30, panel_step=.1, latitude_deg=-34.25, longitude_deg=142.17, dual_axis=True, image_mode=False, cloud_mode=False):
         
+        # Reykjavik, Iceland: latitude_deg=64.1265, longitude_deg=-21.8174
+        # Mildura, Australia: latitude_deg=-34.25, longitude_deg=142.17
+
+        # Error check the lat/long.
+        if abs(latitude_deg) > 90 or abs(longitude_deg) > 180:
+            print "Error: latitude must be between [-90, 90], longitude between [-180,180]. Lat:", latitude_deg, "Long:", longitude_deg
+            quit()
+
+        if cloud_mode and not image_mode:
+            print "Warning (SolarOOMDP): Clouds were set to active but image mode is off. No cloud simulation supported for non-image-mode."
+            cloud_mode = False
+
         # Mode information
         # If we are in 1-axis tracking mode, change actions accordingly.
         if not(dual_axis):
             SolarOOMDP.ACTIONS = ["do_nothing", "panel_forward_ew", "panel_back_ew"]
 
-        # if we are in image mode, add pixels individually as attributes
+        # Image stuff.
+        self.img_dims = 16
         self.image_mode = image_mode
+        self.cloud_mode = cloud_mode
+        self.clouds = self._generate_clouds() if cloud_mode else []
 
         # Global information
         self.latitude_deg = latitude_deg # positive in the northern hemisphere
         self.longitude_deg = longitude_deg # negative reckoning west from prime meridian in Greenwich, England
         self.step_panel = panel_step
         self.timestep = timestep
-        self.reflective_index = reflective_index
+        self.reflective_index = 0.5
 
         # Time stuff.
         self.init_time = date_time
         self.time = date_time
 
-        # Image stuff.
-        self.img_dims = img_dims
-
         # Make state and call super.
-        init_state = self._create_state(0.0, -30.0, self.init_time, longitude_deg, latitude_deg)
+        init_state = self._create_state(0.0, 0.0, self.init_time, longitude_deg, latitude_deg)
         OOMDP.__init__(self, SolarOOMDP.ACTIONS, self.objects, self._transition_func, self._reward_func, init_state=init_state)
 
     def reset(self):
+        '''
+        Summary:
+            Resets the OOMDP back to the initial configuration.
+        '''
         self.time = self.init_time
         OOMDP.reset(self)
 
     def _get_day(self):
         return self.time.timetuple().tm_yday
+
+    # -------------------
+    # --- CLOUD STUFF ---
+    # -------------------
+
+    def _generate_clouds(self):
+        '''
+        Returns:
+            (list of Cloud)
+        '''
+        num_clouds = random.randint(4,8)
+        clouds = []
+
+        # Generate info for each cloud.
+        dx, dy = random.randint(-1,1), random.randint(-1,1)
+        for i in xrange(num_clouds):
+            x = random.randint(0, self.img_dims)
+            y = random.randint(0, self.img_dims)
+            rx = random.randint(3,6)
+            ry = random.randint(2,rx)
+            clouds.append(Cloud(x, y, dx, dy, rx, ry))
+
+        return clouds
+
+    def _move_clouds(self):
+        '''
+        Summary:
+            Moves each cloud in the cloud list (self.clouds).
+        '''
+        for cloud in self.clouds:
+            cloud.move(self.timestep)
+
+    # ----------------------------------
+    # --- REWARD AND TRANSITION FUNC ---
+    # ----------------------------------
 
     def _reward_func(self, state, action):
         '''
@@ -79,6 +131,12 @@ class SolarOOMDP(OOMDP):
         panel_ns_deg = state.get_panel_angle_ew()
         panel_ew_deg = state.get_panel_angle_ns()
 
+        # Cloud stuff.
+        direct_cloud_modifer = 1.0
+        if self.cloud_mode:
+            sun_x, sun_y = self._get_sun_x_y(sun_azimuth_deg, sun_altitude_deg)
+            direct_cloud_modifer -= sh._compute_direct_cloud_cover(self.clouds, sun_x, sun_y, self.img_dims)
+
         # Compute direct radiation.
         direct_rads = sh._compute_radiation_direct(self.time, sun_altitude_deg)
         diffuse_rads = sh._compute_radiation_diffuse(self.time, self._get_day(), sun_altitude_deg)
@@ -90,54 +148,11 @@ class SolarOOMDP(OOMDP):
         reflective_tilt_factor = sh._compute_reflective_radiation_tilt_factor(panel_ns_deg, panel_ew_deg)
 
         # Compute total.
-        reward = direct_rads * direct_tilt_factor + \
+        reward = direct_cloud_modifer*direct_rads * direct_tilt_factor + \
                     diffuse_rads * diffuse_tilt_factor + \
                     reflective_rads * reflective_tilt_factor
 
-        # Penalize for 
-        if action != "do_nothing":
-            reward -= 10.0
-
         return reward
-
-
-    def _sun_rads_to_tilted_panel_rads(self, rads_at_loc, sun_alt, sun_az, panel_ns, panel_ew):
-        '''
-        Args:
-            rads_at_loc (float)
-            panel_alt (float in [0, 180])
-            panel_az (float in [0, 180])
-            delta (declination): Computed via Equation (2) of 
-                Benghanem, M. "Optimization of tilt angle for solar panel: Case study for Madinah, Saudi Arabia."
-                Applied Energy 88.4 (2011): 1427-1433.
-
-        Summary:
-            Computes the tilt coefficient for solar irradiance, from:
-                Andersen P (1980) Comments on "Calculation of monthly average insolation on tilted surfaces" by SA Klein.
-                Solar Energy: 25.
-        '''
-        
-        # Convert relevant params to radians.
-        panel_az_radians = m.radians(panel_az)
-        panel_alt_radians = m.radians(panel_alt)
-        
-        sun_alt_radians = m.radians(sun_alt)
-        sun_az_radians = m.radians(sun_az)
-
-        delta = m.radians(_compute_declination(self._get_day()))
-        lat_radians = m.radians(self.latitude_deg)
-        omega_s = numpy.arccos(-m.tan(lat_radians) * m.tan(delta))
-
-        # This part is messed up.
-        A, B = _compute_a_b(lat_radians, panel_az_radians, panel_alt_radians, delta)
-        omega_rt, omega_st = _compute_omega_r_s(omega_s, A, B, panel_az_radians)
-        tilt_ratio_numer = integrate.quad(lambda x: m.cos(panel_alt_radians * x), omega_rt, omega_st)
-        tilt_ratio_denom = integrate.quad(lambda x: m.cos(sun_alt_radians * x), omega_s, omega_s + (omega_st - omega_rt))
-        tilt_ratio = 0.0 if tilt_ratio_denom[0] == 0.0 else max(tilt_ratio_numer[0] / tilt_ratio_denom[0], 0.0)
-        
-        panel_rads = rads_at_loc * tilt_ratio
-
-        return panel_rads
 
     def _transition_func(self, state, action):
         '''
@@ -152,6 +167,12 @@ class SolarOOMDP(OOMDP):
         self.time += datetime.timedelta(minutes=self.timestep)
         state_angle_ns = state.get_panel_angle_ns()
         state_angle_ew = state.get_panel_angle_ew()
+
+        # Remake or move clouds.
+        if self.time.hour == 6:
+            self.clouds = self._generate_clouds() if self.cloud_mode else []
+        elif self.clouds != []:
+            self._move_clouds()
 
         step = self.step_panel
 
@@ -213,14 +234,14 @@ class SolarOOMDP(OOMDP):
         sun_angle_AZ = sh._compute_sun_azimuth(lat, lon, t)
         sun_angle_ALT = sh._compute_sun_altitude(lat, lon, t)
 
-        if (self.image_mode):
+        # Image stuff.
+        if self.image_mode:
+            # Set attributes as pixels.
             image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT)
             for i in range (self.img_dims):
                 for j in range (self.img_dims):
                     idx = i*self.img_dims + j
                     sun_attributes['pix' + str(i)] = image[i][j]    
-
-        # Add this stuff as another property in the state (like date_time, ect)
         else:
             sun_attributes["angle_AZ"] = sun_angle_AZ
             sun_attributes["angle_ALT"] = sun_angle_ALT  
@@ -229,20 +250,33 @@ class SolarOOMDP(OOMDP):
         self.objects["sun"].append(sun)
 
         return SolarOOMDPState(self.objects, date_time=t, longitude=lon, latitude=lat, sun_angle_AZ = sun_angle_AZ, sun_angle_ALT = sun_angle_ALT)
+    
+    # -------------------
+    # --- IMAGE STUFF ---
+    # -------------------
+
+    def _get_sun_x_y(self, sun_angle_AZ, sun_angle_ALT):
+        x = self.img_dims * (1 + m.sin(m.radians(sun_angle_AZ)))/2
+        y = self.img_dims * m.sin(m.radians(sun_angle_ALT))/2
+        return x, y
 
     def _create_sun_image(self, sun_angle_AZ, sun_angle_ALT):
         # Create image of the sun, given alt and az
-        sun_dim = self.img_dims/16
+        sun_dim = self.img_dims/8.0
 
         # For viewing purposes, we normalize between 0 and 1 on the x axis and 0 to .5 on the y axis
-        x = self.img_dims * (1 + m.sin(m.radians(sun_angle_AZ)))/2
-        y = self.img_dims * m.sin(m.radians(sun_angle_ALT))/2
-        image = [l[:] for l in [[0] * self.img_dims] * self.img_dims]
+        x, y = self._get_sun_x_y(sun_angle_AZ, sun_angle_ALT)
+        image = [np.ones(self.img_dims)*0.8 for l in [[0] * self.img_dims] * self.img_dims]
 
         # Make gaussian sun
         for i in range (self.img_dims):
             for j in range (self.img_dims):
-                image[i][j] = self._gaussian(j, x, sun_dim) * self._gaussian(i, y, sun_dim)
+                image[i][j] += _gaussian(j, x, sun_dim) * _gaussian(i, y, sun_dim)
+
+                # Add cloud cover.
+                for cloud in self.clouds:
+                    image[i][j] -= (_gaussian(j, cloud.get_mu()[0], cloud.get_sigma()[0][0]) * \
+                                    _gaussian(i, cloud.get_mu()[1], cloud.get_sigma()[1][1]) * cloud.get_intensity())
 
         # Show image (for testing purposes)
         # self._show_image(image)
@@ -250,7 +284,7 @@ class SolarOOMDP(OOMDP):
         return image
 
     def _show_image(self, image):
-        plt.imshow(image, cmap='Greys', interpolation='nearest')
+        plt.imshow(image, cmap='gray', vmin=00.0, vmax=1.0, interpolation='nearest')
         plt.gca().invert_yaxis()
         plt.title( 'Images used to train model')
         plt.figtext(0.01, 0.95, 'Date and Time: ' + str(self.time.ctime()), fontsize = 11)
@@ -258,13 +292,35 @@ class SolarOOMDP(OOMDP):
         plt.figtext(0.01, 0.85, 'Longitude: ' + str(self.longitude_deg), fontsize = 11)
         plt.show()
 
-    # Credit to http://stackoverflow.com/questions/14873203/plotting-of-1-dimensional-gaussian-distribution-function
-    # TODO: fix ^
-    def _gaussian(self, x, mu, sig):
-        return numpy.exp(-numpy.power(x - mu, 2.) / (2 * numpy.power(sig, 2.)))
-
     def __str__(self):
-        return "solarmdp_" + "p-" + str(self.step_panel)
+        percept = "true"
+        if self.image_mode and self.cloud_mode:
+            percept = "cloud_img"
+        elif self.image_mode:
+            percept = "img"
+        return "solarmdp_" + "p-" + str(self.step_panel) + "_" + percept
+
+# Credit to http://stackoverflow.com/questions/14873203/plotting-of-1-dimensional-gaussian-distribution-function
+# TODO: fix ^
+def _gaussian(x, mu, sig):
+    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+
+def _multivariate_gaussian(x, y, mu_vec, cov_matrix):
+    '''
+    Args;
+        x (float)
+        y (float)
+        mu_vec (np.array)
+        cov_matrix (np.matrix)
+
+    Returns:
+        (float): evaluates the PDF of the multivariate at the point x,y.
+    '''
+    numerator = np.exp(-.5 *np.transpose(np.array([x,y]) - mu_vec) * np.linalg.inv(cov_matrix) * (np.array([x,y]) - mu_vec))
+    denominator = np.sqrt(np.linalg.det(2*m.pi*cov_matrix))
+
+    res = numerator / denominator
+    return res[0][0] + res[1][1]
 
 def _error_check(state, action):
     '''
@@ -284,7 +340,7 @@ def _error_check(state, action):
         print "Error: the given state (" + str(state) + ") was not of the correct class."
         quit()
 
-
+# --- Test ---
 def main():
     agent = {"angle": 0}
     sun = {"angle": 0}
