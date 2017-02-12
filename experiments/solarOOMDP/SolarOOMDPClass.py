@@ -26,7 +26,7 @@ class SolarOOMDP(OOMDP):
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=100, longitude_deg=-5, img_dims=16, dual_axis=True, image_mode=False):
+    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=50, longitude_deg=1.1, img_dims=64, dual_axis=True, image_mode=False):
         
         # Mode information
         # If we are in 1-axis tracking mode, change actions accordingly.
@@ -214,7 +214,7 @@ class SolarOOMDP(OOMDP):
         sun_angle_ALT = sh._compute_sun_altitude(lat, lon, t)
 
         if (self.image_mode):
-            image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT)
+            image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT, bounded_panel_angle_ns, bounded_panel_angle_ew)
             for i in range (self.img_dims):
                 for j in range (self.img_dims):
                     idx = i*self.img_dims + j
@@ -230,13 +230,24 @@ class SolarOOMDP(OOMDP):
 
         return SolarOOMDPState(self.objects, date_time=t, longitude=lon, latitude=lat, sun_angle_AZ = sun_angle_AZ, sun_angle_ALT = sun_angle_ALT)
 
-    def _create_sun_image(self, sun_angle_AZ, sun_angle_ALT):
+    def _create_sun_image(self, sun_angle_AZ, sun_angle_ALT, panel_angle_ns, panel_angle_ew):
         # Create image of the sun, given alt and az
         sun_dim = self.img_dims/16
 
         # For viewing purposes, we normalize between 0 and 1 on the x axis and 0 to .5 on the y axis
-        x = self.img_dims * (1 + m.sin(m.radians(sun_angle_AZ)))/2
-        y = self.img_dims * m.sin(m.radians(sun_angle_ALT))/2
+        panel_tilt_offset_y = m.sin(m.radians(panel_angle_ns))
+        panel_tilt_offset_x = m.sin(m.radians(panel_angle_ew))
+
+        print "sun az: ", sun_angle_AZ
+        # print "sun alt: ", sun_angle_AZ
+
+        percent_in_sky_x = m.sin(m.radians(sun_angle_AZ))
+        percent_in_sky_y = m.sin(m.radians(sun_angle_ALT))
+
+        print "panel_angle_ew ", panel_angle_ew
+        x = self.img_dims * (1 + (percent_in_sky_x - panel_tilt_offset_x))/2 
+        y = self.img_dims * (percent_in_sky_y - panel_tilt_offset_y)/2
+
         image = [l[:] for l in [[0] * self.img_dims] * self.img_dims]
 
         # Make gaussian sun
@@ -244,8 +255,13 @@ class SolarOOMDP(OOMDP):
             for j in range (self.img_dims):
                 image[i][j] = self._gaussian(j, x, sun_dim) * self._gaussian(i, y, sun_dim)
 
+                # Backcompute the altitude of the pixel; if it is below the horizon, render black.
+                alt_pix = 2*float(i)/self.img_dims + panel_tilt_offset_y
+                if alt_pix < 0:
+                    image[i][j] = 1
+
         # Show image (for testing purposes)
-        # self._show_image(image)
+        self._show_image(image)
 
         return image
 

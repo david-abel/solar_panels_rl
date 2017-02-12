@@ -23,11 +23,11 @@ def main():
         # Get the grena tracker to output altitude/azimuth
 
     dual_axis = True
-    image_mode = False
+    image_mode = True
 
     # Setup MDP.
     panel_step = 2
-    date_time = datetime.datetime(day=5, hour=2, month=8, year=2015)
+    date_time = datetime.datetime(day=5, hour=6, month=8, year=2015)
     solar_mdp = SolarOOMDP(date_time, timestep=1.0, panel_step=panel_step, dual_axis = dual_axis, image_mode = image_mode)
     actions = solar_mdp.get_actions()
     gamma = solar_mdp.get_gamma()
