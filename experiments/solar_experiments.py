@@ -10,7 +10,7 @@ import datetime
 
 # simple_rl imports.
 from simple_rl.run_experiments import run_agents_on_mdp
-from simple_rl.agents import RandomAgent, FixedPolicyAgent, LinearApproxQLearnerAgent, GradientBoostingAgent
+from simple_rl.agents import RandomAgent, FixedPolicyAgent, LinearApproxQLearnerAgent
 
 # Local imports.
 from solarOOMDP.SolarOOMDPClass import SolarOOMDP
