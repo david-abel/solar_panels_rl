@@ -54,7 +54,6 @@ class SolarTracker(object):
 			if cos_sim > max_cos_sim:
 				best_action = action
 				max_cos_sim = cos_sim
-		if (best_action is "panel_forward_ew" or best_action is  "panel_back_ew"):
-			print "###########"
+
 		return best_action
 

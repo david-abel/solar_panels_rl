@@ -232,15 +232,11 @@ class SolarOOMDP(OOMDP):
         sun_attributes = {}
         sun_angle_AZ = sh._compute_sun_azimuth(lat, lon, t)
         sun_angle_ALT = sh._compute_sun_altitude(lat, lon, t)
-
-        # Image stuff.
-        if (self.image_mode):
-            # Set attributes as pixels.
-            image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT, bounded_panel_angle_ns, bounded_panel_angle_ew)
+        
         # Image stuff.
         if self.image_mode:
             # Set attributes as pixels.
-            image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT)
+            image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT, bounded_panel_angle_ns, bounded_panel_angle_ew)
             for i in range (self.img_dims):
                 for j in range (self.img_dims):
                     idx = i*self.img_dims + j
@@ -271,13 +267,12 @@ class SolarOOMDP(OOMDP):
         panel_tilt_offset_y = m.sin(m.radians(panel_angle_ns))
         panel_tilt_offset_x = m.sin(m.radians(panel_angle_ew))
 
-        print "sun az: ", sun_angle_AZ
         # print "sun alt: ", sun_angle_AZ
 
         percent_in_sky_x = m.sin(m.radians(sun_angle_AZ))
         percent_in_sky_y = m.sin(m.radians(sun_angle_ALT))
 
-        print "panel_angle_ew ", panel_angle_ew
+        # print "panel_angle_ew ", panel_angle_ew
         x = self.img_dims * (1 + (percent_in_sky_x - panel_tilt_offset_x))/2 
         y = self.img_dims * (percent_in_sky_y - panel_tilt_offset_y)/2
 
@@ -300,7 +295,7 @@ class SolarOOMDP(OOMDP):
                     image[i][j] = 1
 
         # Show image (for testing purposes)
-        self._show_image(image)
+        # self._show_image(image)
 
         return image
 
