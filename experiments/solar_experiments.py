@@ -68,9 +68,9 @@ def main():
     img_cloud_agents, img_cloud_solar_mdp = setup_experiment("image_cloud_percept")
 
     # Run experiments.
-    run_agents_on_mdp(sun_agents, sun_solar_mdp, num_instances=5, num_episodes=1, num_steps=15*24*6, clear_old_results=True)
-    run_agents_on_mdp(img_agents, img_solar_mdp, num_instances=5, num_episodes=1, num_steps=15*24*6, clear_old_results=True)
-    # run_agents_on_mdp(img_cloud_agents, img_cloud_solar_mdp, num_instances=10, num_episodes=1, num_steps=30*24*5, clear_old_results=True)
+    # run_agents_on_mdp(sun_agents, sun_solar_mdp, num_instances=5, num_episodes=1, num_steps=15*24*6, clear_old_results=True)
+    # run_agents_on_mdp(img_agents, img_solar_mdp, num_instances=5, num_episodes=1, num_steps=15*24*6, clear_old_results=True)
+    run_agents_on_mdp(img_cloud_agents, img_cloud_solar_mdp, num_instances=2, num_episodes=1, num_steps=15*24*2, clear_old_results=True)
     
 if __name__ == "__main__":
     main()

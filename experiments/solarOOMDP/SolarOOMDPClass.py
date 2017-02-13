@@ -87,7 +87,7 @@ class SolarOOMDP(OOMDP):
         Returns:
             (list of Cloud)
         '''
-        num_clouds = random.randint(4,8)
+        num_clouds = random.randint(1,5)
         clouds = []
 
         # Generate info for each cloud.
@@ -135,7 +135,12 @@ class SolarOOMDP(OOMDP):
         direct_cloud_modifer = 1.0
         if self.cloud_mode:
             sun_x, sun_y = self._get_sun_x_y(sun_azimuth_deg, sun_altitude_deg)
-            direct_cloud_modifer -= sh._compute_direct_cloud_cover(self.clouds, sun_x, sun_y, self.img_dims)
+            direct_cloud_modifer = sh._compute_direct_cloud_cover(self.clouds, sun_x, sun_y, self.img_dims)
+            diffuse_cloud_modifier = sh._compute_diffuse_cloud_cover(self.clouds, self.img_dims)
+            print "percent of direct after clouds:", round(direct_cloud_modifer*100,4)
+            # Add panel orientation to diffuse stuff.
+        
+        direct_cloud_modifer = 0.0
 
         # Compute direct radiation.
         direct_rads = sh._compute_radiation_direct(self.time, sun_altitude_deg)
@@ -147,8 +152,10 @@ class SolarOOMDP(OOMDP):
         diffuse_tilt_factor = sh._compute_diffuse_radiation_tilt_factor(panel_ns_deg, panel_ew_deg)
         reflective_tilt_factor = sh._compute_reflective_radiation_tilt_factor(panel_ns_deg, panel_ew_deg)
 
+        # print "drads", direct_rads - direct_rads * direct_cloud_modifer
+
         # Compute total.
-        reward = direct_cloud_modifer*direct_rads * direct_tilt_factor + \
+        reward = direct_cloud_modifer * direct_rads * direct_tilt_factor + \
                     diffuse_rads * diffuse_tilt_factor + \
                     reflective_rads * reflective_tilt_factor
 
@@ -169,7 +176,7 @@ class SolarOOMDP(OOMDP):
         state_angle_ew = state.get_panel_angle_ew()
 
         # Remake or move clouds.
-        if self.time.hour == 6:
+        if self.time.hour == 4:
             self.clouds = self._generate_clouds() if self.cloud_mode else []
         elif self.clouds != []:
             self._move_clouds()
@@ -266,17 +273,17 @@ class SolarOOMDP(OOMDP):
 
         # For viewing purposes, we normalize between 0 and 1 on the x axis and 0 to .5 on the y axis
         x, y = self._get_sun_x_y(sun_angle_AZ, sun_angle_ALT)
-        image = [np.ones(self.img_dims)*0.8 for l in [[0] * self.img_dims] * self.img_dims]
+        image = [np.ones(self.img_dims)*0.6 for l in [[0] * self.img_dims] * self.img_dims]
 
         # Make gaussian sun
         for i in range (self.img_dims):
             for j in range (self.img_dims):
-                image[i][j] += _gaussian(j, x, sun_dim) * _gaussian(i, y, sun_dim)
+                image[i][j] = min(image[i][j] + sh._gaussian(j, x, sun_dim) * sh._gaussian(i, y, sun_dim), 1.0)
 
                 # Add cloud cover.
                 for cloud in self.clouds:
-                    image[i][j] -= (_gaussian(j, cloud.get_mu()[0], cloud.get_sigma()[0][0]) * \
-                                    _gaussian(i, cloud.get_mu()[1], cloud.get_sigma()[1][1]) * cloud.get_intensity())
+                    image[i][j] -= (sh._gaussian(j, cloud.get_mu()[0], cloud.get_sigma()[0][0]) * \
+                                    sh._gaussian(i, cloud.get_mu()[1], cloud.get_sigma()[1][1]) * cloud.get_intensity())
 
         # Show image (for testing purposes)
         # self._show_image(image)
@@ -300,10 +307,7 @@ class SolarOOMDP(OOMDP):
             percept = "img"
         return "solarmdp_" + "p-" + str(self.step_panel) + "_" + percept
 
-# Credit to http://stackoverflow.com/questions/14873203/plotting-of-1-dimensional-gaussian-distribution-function
-# TODO: fix ^
-def _gaussian(x, mu, sig):
-    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))
+
 
 def _multivariate_gaussian(x, y, mu_vec, cov_matrix):
     '''
