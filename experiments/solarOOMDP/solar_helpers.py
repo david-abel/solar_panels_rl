@@ -1,9 +1,11 @@
 # Python imports.
 import math as m
-import numpy
+import numpy as np
 
 # Misc. imports.
 from pysolar import solar, radiation
+
+CLOUD_DIFFUS_FACTOR = 0.1 # 10% of light is blocked
 
 def _compute_sun_altitude(latitude_deg, longitude_deg, time):
     return solar.GetAltitude(latitude_deg, longitude_deg, time)
@@ -14,35 +16,44 @@ def _compute_sun_azimuth(latitude_deg, longitude_deg, time):
 # --- Radiation hitting the surface of the Earth ---
 
 def _compute_radiation_direct(time, sun_altitude_deg):
-    return _get_radiation_direct(time, sun_altitude_deg)
+    return max(_get_radiation_direct(time, sun_altitude_deg), 0.0)
 
 def _compute_radiation_diffuse(time, day, sun_altitude_deg):
     sky_diffus = _compute_sky_diffusion(day)
-    return sky_diffus * _compute_radiation_direct(time, sun_altitude_deg)
+    return max(sky_diffus * _compute_radiation_direct(time, sun_altitude_deg), 0.0)
 
 def _compute_radiation_reflective(time, day, reflective_index, sun_altitude_deg):
     sky_diffus = _compute_sky_diffusion(day)
     rad_direct = _compute_radiation_direct(time, sun_altitude_deg)
-    return reflective_index * rad_direct * (m.sin(m.radians(sun_altitude_deg)) + sky_diffus)
+    return max(reflective_index * rad_direct * (m.sin(m.radians(sun_altitude_deg)) + sky_diffus), 0.0)
     
 def _compute_sky_diffusion(day):
     return 0.095 * m.sin(0.99*day - 99)
 
-# MAIN TODO: compute cloud effects.
+# --- CLOUDS ---
+
 def _compute_direct_cloud_cover(clouds, sun_x, sun_y, img_dims):
     sun_dim = img_dims / 8.0
+    total_sun_light = 0.0
+    total_covered_light = 0.0
+    sun_x_range = range( int(max(sun_x - sun_dim, 0)), int(min(sun_x + sun_dim, img_dims)))
+    sun_y_range = range( int(max(sun_y - sun_dim, 0)), int(min(sun_y + sun_dim, img_dims))) 
 
-    total = 0.0
-    for cloud in clouds:
-        euc_dist = m.sqrt((sun_x - cloud.x)**2 + (sun_y - cloud.y)**2)
+    for i in sun_x_range:
+        for j in sun_y_range:
+            sun_light = _gaussian(j, sun_x, sun_dim) * _gaussian(i, sun_y, sun_dim)
+            # Loop the central location of the sun and compute cloud cover:
+            cloud_cover = 0.0
+            for cloud in clouds:
+                cloud_cover += (_gaussian(j, cloud.get_mu()[0], cloud.get_sigma()[0][0]) * \
+                                    _gaussian(i, cloud.get_mu()[1], cloud.get_sigma()[1][1]) * cloud.get_intensity())
 
-        # if euc_dist <= m.sqrt(cloud.rx**2 + cloud.ry**2):
-            # print "overlap:", cloud.x, cloud.y, sun_x, sun_y, cloud.rx, cloud.ry, "amount:", m.sqrt(cloud.rx**2 + cloud.ry**2) - euc_dist
-        # else:
-            # print "NONE", cloud.x, cloud.y, sun_x, sun_y, cloud.rx, cloud.ry
+            total_sun_light += sun_light
+            total_covered_light += (sun_light - cloud_cover*CLOUD_DIFFUS_FACTOR)
 
-    return total / 1000.0
-
+    if total_sun_light > 0 and total_covered_light > 0:
+        return float(total_covered_light) / total_sun_light
+    return 1.0
     
 
 # --- Tilt Factors ---
@@ -60,7 +71,7 @@ def _compute_direct_radiation_tilt_factor(panel_ns_deg, panel_ew_deg, sun_altitu
     sun_vector = _compute_sun_vector(sun_altitude_deg, sun_azimuth_deg)
     panel_normal = _compute_panel_normal_vector(panel_ns_deg, panel_ew_deg)
 
-    cos_diff = numpy.dot(sun_vector, panel_normal)
+    cos_diff = np.dot(sun_vector, panel_normal)
 
     return abs(cos_diff)
 
@@ -93,7 +104,7 @@ def _compute_panel_normal_vector(panel_ns_deg, panel_ew_deg):
 
 def _normalize(x, y, z):
     tot = m.sqrt(x**2 + y**2 + z**2)
-    return numpy.array([x / tot, y / tot, z / tot])
+    return np.array([x / tot, y / tot, z / tot])
 
 def _compute_diffuse_radiation_tilt_factor(panel_ns_deg, panel_ew_deg):
     '''
@@ -126,3 +137,8 @@ def _get_radiation_direct(utc_datetime, sun_altitude_deg):
         return flux * m.exp(-1 * optical_depth * air_mass_ratio)
     else:
         return 0.0
+
+# Credit to http://stackoverflow.com/questions/14873203/plotting-of-1-dimensional-gaussian-distribution-function
+# TODO: fix ^
+def _gaussian(x, mu, sig):
+    return np.exp(-np.power(x - mu, 2.) / (2 * np.power(sig, 2.)))

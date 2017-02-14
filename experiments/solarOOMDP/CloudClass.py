@@ -2,7 +2,7 @@ import numpy as np
 
 class Cloud(object):
 
-    PIX_INTENSITY = .2
+    PIX_INTENSITY = .22
 
     def __init__(self, x, y, dx, dy, rx, ry, intensity=PIX_INTENSITY):
         self.x, self.y = x, y

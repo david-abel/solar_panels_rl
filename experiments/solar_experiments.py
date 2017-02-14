@@ -17,11 +17,10 @@ from solarOOMDP.SolarOOMDPClass import SolarOOMDP
 from SolarTrackerClass import SolarTracker
 import tracking_baselines as tb
 
-def setup_experiment(exp_name):
+def setup_experiment(exp_name, loc="australia"):
     '''
     Args:
         exp_name (str): One of 'sun_percept', 'image_percept', or 'image_cloud_percept'.
-
     Returns:
         (tuple):
             [1]: (list of Agents)
@@ -36,27 +35,34 @@ def setup_experiment(exp_name):
     except KeyError:
         print "Error: experiment name unknown ('" + str(exp_name) + "''). Choose one of: ['sun_percept', 'image_percept', 'image_cloud_percept']."
         quit()
-
     # Setup MDP.
-    dual_axis = True
     panel_step = 2
-    timestep = 4.0
-    date_time = datetime.datetime(day=4, hour=20, month=7, year=2015) # Normally: 20
-    solar_mdp = SolarOOMDP(date_time, timestep=timestep, panel_step=panel_step, dual_axis = dual_axis, image_mode=image_mode, cloud_mode=cloud_mode)
+    timestep = 3.0
+    # Reykjavik, Iceland: latitude_deg=64.1265, longitude_deg=-21.8174, day=4, hour=20, month=3, year=2030
+    # Mildura, Australia: latitude_deg=-34.25, longitude_deg=142.17, day=3, hour=18, month=6, year=2015
+    if loc == "australia":
+        date_time = datetime.datetime(day=1, hour=18, month=6, year=2015)
+        lat, lon = -34.25, 142.17
+    elif loc == "iceland":
+        date_time = datetime.datetime(day=1, hour=18, month=11, year=2030)
+        lat, lon = 64.1265, -21.8174
+    solar_mdp = SolarOOMDP(date_time, timestep=timestep, latitude_deg=lat, longitude_deg=lon, panel_step=panel_step, image_mode=image_mode, cloud_mode=cloud_mode)
     actions, gamma = solar_mdp.get_actions(), solar_mdp.get_gamma()
 
     # Setup fixed agent.
     static_agent = FixedPolicyAgent(tb.static_policy)
 
-    # Grena tracker from time/loc.
-    grena_tracker = SolarTracker(tb.grena_tracker, panel_step=panel_step, dual_axis=dual_axis)
-    grena_tracker_agent = FixedPolicyAgent(grena_tracker.get_policy(), name="grena-tracker")
+    # Grena single axis and double axis trackers from time/loc.
+    # grena_tracker_single = SolarTracker(tb.grena_tracker, panel_step=panel_step, dual_axis=False)
+    # grena_tracker_single_agent = FixedPolicyAgent(grena_tracker_single.get_policy(), name="grena-tracker-single")
+    grena_tracker_double = SolarTracker(tb.grena_tracker, panel_step=panel_step, dual_axis=True)
+    grena_tracker_double_agent = FixedPolicyAgent(grena_tracker_double.get_policy(), name="grena-tracker")
 
-    # Setup RL agents.
-    lin_approx_agent = LinearApproxQLearnerAgent(actions, alpha=0.1, epsilon=0.2, gamma=gamma, rbf=False, anneal=True)
-    lin_approx_agent_rbf = LinearApproxQLearnerAgent(actions, alpha=0.1, epsilon=0.2, gamma=gamma, rbf=True, anneal=True)
-
-    agents = [grena_tracker_agent, static_agent, lin_approx_agent_rbf]
+    # Setup RL agents
+    saxis_actions = solar_mdp.get_single_axis_actions()
+    lin_approx_agent_rbf = LinearApproxQLearnerAgent(actions, alpha=0.2, epsilon=0.2, gamma=gamma, rbf=True)
+    lin_approx_agent_single_rbf = LinearApproxQLearnerAgent(saxis_actions, name="linear-single-rbf", alpha=0.2, epsilon=0.2, gamma=gamma, rbf=True)
+    agents = [grena_tracker_double_agent, static_agent, lin_approx_agent_single_rbf, lin_approx_agent_rbf]
 
     return agents, solar_mdp
 
@@ -68,9 +74,9 @@ def main():
     img_cloud_agents, img_cloud_solar_mdp = setup_experiment("image_cloud_percept")
 
     # Run experiments.
-    # run_agents_on_mdp(sun_agents, sun_solar_mdp, num_instances=5, num_episodes=1, num_steps=15*24*6, clear_old_results=True)
-    # run_agents_on_mdp(img_agents, img_solar_mdp, num_instances=5, num_episodes=1, num_steps=15*24*6, clear_old_results=True)
-    run_agents_on_mdp(img_cloud_agents, img_cloud_solar_mdp, num_instances=2, num_episodes=1, num_steps=15*24*2, clear_old_results=True)
+    run_agents_on_mdp(sun_agents, sun_solar_mdp, num_instances=5, num_episodes=1, num_steps=20*24*4, clear_old_results=True)
+    run_agents_on_mdp(img_agents, img_solar_mdp, num_instances=5, num_episodes=1, num_steps=20*24*4, clear_old_results=True)
+    run_agents_on_mdp(img_cloud_agents, img_cloud_solar_mdp, num_instances=5, num_episodes=1, num_steps=20*24*4, clear_old_results=True)
     
 if __name__ == "__main__":
     main()

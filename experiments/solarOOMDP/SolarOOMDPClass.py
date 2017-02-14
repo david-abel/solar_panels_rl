@@ -27,10 +27,7 @@ class SolarOOMDP(OOMDP):
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    def __init__(self, date_time, timestep=30, panel_step=.1, latitude_deg=-34.25, longitude_deg=142.17, dual_axis=True, image_mode=False, cloud_mode=False):
-        
-        # Reykjavik, Iceland: latitude_deg=64.1265, longitude_deg=-21.8174
-        # Mildura, Australia: latitude_deg=-34.25, longitude_deg=142.17
+    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=-34.25, longitude_deg=142.17, img_dims=64, dual_axis=True, image_mode=False, cloud_mode=False):
 
         # Error check the lat/long.
         if abs(latitude_deg) > 90 or abs(longitude_deg) > 180:
@@ -77,6 +74,9 @@ class SolarOOMDP(OOMDP):
 
     def _get_day(self):
         return self.time.timetuple().tm_yday
+
+    def get_single_axis_actions(self):
+        return ["do_nothing", "panel_forward_ew", "panel_back_ew"]
 
     # -------------------
     # --- CLOUD STUFF ---
@@ -131,17 +131,21 @@ class SolarOOMDP(OOMDP):
         panel_ns_deg = state.get_panel_angle_ew()
         panel_ew_deg = state.get_panel_angle_ns()
 
+        if action is "optimal":
+            pass
+            # compute optimal reward
+        else:
+            reward = self._compute_reward(sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg)
+
+        return reward
+
+    def _compute_reward(self, sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg):
         # Cloud stuff.
         direct_cloud_modifer = 1.0
         if self.cloud_mode:
             sun_x, sun_y = self._get_sun_x_y(sun_azimuth_deg, sun_altitude_deg)
             direct_cloud_modifer = sh._compute_direct_cloud_cover(self.clouds, sun_x, sun_y, self.img_dims)
-            diffuse_cloud_modifier = sh._compute_diffuse_cloud_cover(self.clouds, self.img_dims)
-            print "percent of direct after clouds:", round(direct_cloud_modifer*100,4)
-            # Add panel orientation to diffuse stuff.
         
-        direct_cloud_modifer = 0.0
-
         # Compute direct radiation.
         direct_rads = sh._compute_radiation_direct(self.time, sun_altitude_deg)
         diffuse_rads = sh._compute_radiation_diffuse(self.time, self._get_day(), sun_altitude_deg)
@@ -151,8 +155,6 @@ class SolarOOMDP(OOMDP):
         direct_tilt_factor = sh._compute_direct_radiation_tilt_factor(panel_ns_deg, panel_ew_deg, sun_altitude_deg, sun_azimuth_deg)
         diffuse_tilt_factor = sh._compute_diffuse_radiation_tilt_factor(panel_ns_deg, panel_ew_deg)
         reflective_tilt_factor = sh._compute_reflective_radiation_tilt_factor(panel_ns_deg, panel_ew_deg)
-
-        # print "drads", direct_rads - direct_rads * direct_cloud_modifer
 
         # Compute total.
         reward = direct_cloud_modifer * direct_rads * direct_tilt_factor + \
@@ -240,11 +242,11 @@ class SolarOOMDP(OOMDP):
         sun_attributes = {}
         sun_angle_AZ = sh._compute_sun_azimuth(lat, lon, t)
         sun_angle_ALT = sh._compute_sun_altitude(lat, lon, t)
-
+        
         # Image stuff.
         if self.image_mode:
             # Set attributes as pixels.
-            image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT)
+            image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT, bounded_panel_angle_ns, bounded_panel_angle_ew)
             for i in range (self.img_dims):
                 for j in range (self.img_dims):
                     idx = i*self.img_dims + j
@@ -267,11 +269,16 @@ class SolarOOMDP(OOMDP):
         y = self.img_dims * m.sin(m.radians(sun_angle_ALT))/2
         return x, y
 
-    def _create_sun_image(self, sun_angle_AZ, sun_angle_ALT):
+    def _create_sun_image(self, sun_angle_AZ, sun_angle_ALT, panel_angle_ns, panel_angle_ew):
         # Create image of the sun, given alt and az
         sun_dim = self.img_dims/8.0
 
         # For viewing purposes, we normalize between 0 and 1 on the x axis and 0 to .5 on the y axis
+        panel_tilt_offset_y = m.sin(m.radians(panel_angle_ns))
+        panel_tilt_offset_x = m.sin(m.radians(panel_angle_ew))
+
+        percent_in_sky_x = m.sin(m.radians(sun_angle_AZ))
+        percent_in_sky_y = m.sin(m.radians(sun_angle_ALT))
         x, y = self._get_sun_x_y(sun_angle_AZ, sun_angle_ALT)
         image = [np.ones(self.img_dims)*0.6 for l in [[0] * self.img_dims] * self.img_dims]
 
@@ -284,6 +291,11 @@ class SolarOOMDP(OOMDP):
                 for cloud in self.clouds:
                     image[i][j] -= (sh._gaussian(j, cloud.get_mu()[0], cloud.get_sigma()[0][0]) * \
                                     sh._gaussian(i, cloud.get_mu()[1], cloud.get_sigma()[1][1]) * cloud.get_intensity())
+
+                # Backcompute the altitude of the pixel; if it is below the horizon, render black.
+                alt_pix = 2*float(i)/self.img_dims + panel_tilt_offset_y
+                if alt_pix < 0:
+                    image[i][j] = 1
 
         # Show image (for testing purposes)
         # self._show_image(image)
