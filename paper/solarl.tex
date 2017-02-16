@@ -11,8 +11,11 @@
 \usepackage[numbers]{natbib}
 
 \newcommand{\dnote}[1]{\textcolor{blue}{Dave: #1}}
+\newcommand{\enote}[1]{\textcolor{purple}{Emily: #1}}
 \newcommand{\mc}{\mathcal}
 \newcommand\ddfrac[2]{\frac{\displaystyle #1}{\displaystyle #2}}
+
+
 
 % --- Misc. ---
 \hbadness=10000 % No "underfull hbox" messages.
@@ -44,11 +47,13 @@ Providence, RI 02912 \\
 % -- Abstract --
 % -----------------
 \begin{abstract}
-Solar panels sustainably harvest energy from the sun. To improve performance, panels are often equipped with a tracking mechanism that computes the sun's relative location in the sky throughout the day. Based on the tracker's estimate of the sun's location, a controller orients the panel to minimize angle of incidence between solar irradiance and the photovoltaic cells on the surface of the panel, increasing total energy harvested. Prior work has developed efficient tracking algorithms that accurately compute the sun's location, in use by some solar photovoltaic systems.
+Solar panels sustainably harvest energy from the sun. To improve performance, panels are often equipped with a tracking mechanism that computes the sun's position in the sky throughout the day. Based on the tracker's estimate of the sun's location, a controller orients the panel to minimize the angle of incidence between solar radiant energy and the photovoltaic cells on the surface of the panel, increasing total energy harvested. Prior work has developed efficient tracking algorithms that accurately compute the sun's location to facilitate solar tracking and control.
 %
-However, always pointing the panel directly at the sun does not account for diffuse irradiance in the sky, reflected irradiance on the ground and surrounding surfaces, weather conditions (such as cloud coverage), or atmospheric composition, all of which can be contributing factors to the total energy harvested by a solar panel.
+However, always pointing a panel directly at the sun does not account for diffuse irradiance in the sky, reflected irradiance from the ground and surrounding surfaces, or changing weather conditions (such as cloud coverage), all of which are contributing factors to the total energy harvested by a solar panel.
 %
-In this work, we validate the hypothesis that the computational learning paradigm of Reinforcement Learning can optimize solar panel control, leading to a substantial increase the total amount of energy harvested by solar panels over traditional tracking algorithms. We advocate for the use of Reinforcement Learning to solve the solar tracking problem due to its {\it effectiveness}, {\it negligible cost}, and {\it versatility}. Our contribution is twofold: (1) the adaptation of typical RL algorithms to improve solar panels, and (2) the advancement of an open source simulation platform for solar tracking experimentation based on typical solar and irradiance models. We evaluate the utility of various RL approached compared to an idealized tracker, a standard state of the art tracking algorithm, and a fixed panel in our simulated environment across different time scales, in different places on Earth, and using dramatically different percepts (sun coordinates and synthetic images of the sky with and without clouds).
+In this work, we validate the hypothesis that the computational learning paradigm of Reinforcement Learning (RL) can increase the total energy harvested by solar panels by dynamically accounting for these other factors. We advocate for the use of RL for solar panel control due to its {\it effectiveness}, {\it negligible cost}, and {\it versatility}. Our contribution is twofold: (1) adapting typical RL algorithms to the task of improving solar panel performance, and (2) a simulation based on typical solar and irradiance models for experimenting with solar panel control.
+%
+We evaluate the utility of various RL approaches compared to an idealized tracker, an efficient state of the art tracking algorithm, and a fixed panel in our simulated environment. We experiment across different time scales, in different places on Earth, and with dramatically different percepts (sun coordinates, and synthesized images of the sky with and without clouds), consistently demonstrating that simple RL algorithms improve over existing baselines.
 \end{abstract}
 
 
@@ -112,12 +117,12 @@ latitude& $L$& $[-\pi, \pi]$ \\
 longitude& $G$&  $\left[-\frac{\pi}{2}, \frac{\pi}{2}\right]$\\
 declination& $\delta$ & $\left[-\frac{\pi}{2}, \frac{\pi}{2}\right]$ \\
 hour angle& $H$& $\left[-\frac{\pi}{2}, \frac{\pi}{2}\right]$ \\
-zenith& $z$& $[0,\pi]$ \\
+%zenith& $z$& $[0,\pi]$ \\
 azimuth& $\Gamma$& $[-\pi, \pi]$ \\
 altitude& $\alpha$& $[-\pi, \pi]$ \\
 panel NS angle& $\eta$& $[-\pi, \pi]$ \\
 panel EW angle& $\omega$& $[-\pi, \pi]$ \\
-ground reflectance& $\rho$& $[0,1]$ \\
+ground reflective index& $\rho$& $[0,1)$ \\
 \bottomrule
 \end{tabular}
 \caption{Relevant solar tracking and irradiance variables.}
@@ -126,7 +131,7 @@ ground reflectance& $\rho$& $[0,1]$ \\
 % RL Background
 \subsection{RL Background}
 
-Reinforcement Learning (RL) is a computational learning paradigm in which an agent learns to maximize an unknown reward function through repeated interaction with the agent's environment. Classically, an RL agent is assumed to interact with a Markov Decision Process (MDP) or Partially-Observable Markov Decision Process (POMDP). An MDP is a five tuple, $\langle \mc{S}, \mc{A}, \mc{R}, \mc{T}, \gamma \rangle$, where:
+Reinforcement Learning (RL) is a computational learning paradigm in which an agent learns to maximize an unknown reward function through repeated interaction with the agent's environment. Classically, an RL agent is assumed to interact with a Markov Decision Process (MDP)~\cite{puterman2014markov}. An MDP is a five tuple, $\langle \mc{S}, \mc{A}, \mc{R}, \mc{T}, \gamma \rangle$, where:
 \begin{enumerate}
 \item $\mc{S}$ is a set of states
 \item $\mc{A}$ is a set of actions
@@ -149,6 +154,8 @@ Given a policy, $\pi$, the value under the policy is defined by:
 \begin{equation}
 V^\pi(s) = \mc{R}(s, \pi(s)) + \gamma \sum_{s'} \mc{T}(s' \mid s, \pi(s)) V^\pi(s')
 \end{equation}
+
+For further background on RL, see~\citet{sutton1998reinforcement} or~\citet{kaelbling1996reinforcement}.
 
 % Agents
 \subsubsection{Agents}
@@ -245,7 +252,7 @@ We then compute $\theta_d$ as follows:
 
 The diffuse irradiance incident angle, $\theta_f$, is given by a simple approximation: the solar collector is exposed to whatever fraction of the sky it points to, while $\theta_r$ is given by the fraction of the ground the collector points to:
 \begin{equation}
-\theta_f = \frac{\cos \eta + \cos \omega}{2}, \hspace{8mm} \theta_r = \frac{2 - \cos\eta - \cos \omega}{2}
+\theta_f = \frac{\cos \eta + \cos \omega}{2}, \hspace{4mm} \theta_r = \frac{2 - \cos\eta - \cos \omega}{2}
 \end{equation}
 
 % Sample Percepts
@@ -282,15 +289,16 @@ Cloud cover is created randomly throughout the day by generating small Gaussian 
 % ----------------------
 \section{Experiments}
 
-We wrap these four steps inside of a Markov Decision Process (MDP) using the open source library \texttt{simple-rl}.\footnote{\url{https://github.com/david-abel/simple_rl}}.  Each action of the MDP, $a \in \mc{A}$ is one of $\{\texttt{tilt N},\ \texttt{tilt E},\ \texttt{tilt S},\ \texttt{tilt W},\ \texttt{nothing}\}$. The reward function is given by Equation~\ref{eq:total_rads}, though is also affected by cloud coverage.
+% \url{https://github.com/david-abel/simple_rl}
+We wrap these four steps inside of a Markov Decision Process (MDP) using the open source library \texttt{simple-rl}.\footnote{{\it Redacted during review.}}. Each action of the MDP, $a \in \mc{A}$ is one of $\{\texttt{tilt N},\ \texttt{tilt E},\ \texttt{tilt S},\ \texttt{tilt W},\ \texttt{nothing}\}$.
 
 Our core algorithms are $Q$-Learning with a Linear Function approximator, tested with (\texttt{linear-rbf}) and without (\texttt{linear)} a Gaussian radial basis function kernel to introduce some non-linearity. Each of these algorithms uses $\varepsilon$-greedy exploration with $\varepsilon$ set to $0.5$ and learning rate $\alpha = 0.05$ with a standard annealing schedule. The LinUCB approach (\texttt{lin-ucb}) uses an uncertainty bound of $0.3$.
 
 Our core benchmark algorithm is Algorithm 2 from~\citet{Grena2012}, an efficient but accurate solar tracking algorithm, coupled with a controller that always points perfectly at the tracker's estimate of the sun's location. Additionally, we provide results for a fixed panel to illustrate the importance of tracking (\texttt{fixed}).
 
-We conduct three experiments, each with different percepts. The tracker is always given the data needed to estimate the location of the sun, while the percepts change for the RL agent. In the first experiment, the RL agents are given the true sun angles, $\alpha$ and $\Gamma$, and the panel's tilt angles, $\omega$ and $\phi$. The second experiment is intended to more accurately approximate solar tracking in the real world: the RL agents are synthesized greyscale image of the sky taken from the panel's tilted position, shown in Figure~\ref{fig:sun_image}. In the final experiment, the RL agents perceive a bitmap of the sky, this time with simulated cloud coverage (which affects the computation of $R_d, R_b$ and $R_f$), shown in Figure~\ref{fig:sun_image_clouds}.
+We conduct three experiments, each with different percepts. The tracker is always given the data needed to estimate the location of the sun, while the percepts change for the RL agent. In the first experiment, the RL agents are given the true sun angles, $\alpha$ and $\Gamma$, and the panel's tilt angles, $\omega$ and $\phi$. The second experiment is intended to more accurately approximate solar tracking in the real world: the RL agents are synthesized greyscale image of the sky taken from the panel's tilted position, shown in Figure~\ref{fig:sun_image}. In the final experiment, the RL agents perceive a bitmap of the sky, this time with simulated cloud coverage shown in Figure~\ref{fig:sun_image_clouds}. The reward function for all three experiments is given by Equation~\ref{eq:total_rads}, where the third experiment incorporates a small effect of cloud coverage on $R_d$.
 
-Additional relevant parameters were set as follows: $\gamma = 0.99$, time advances $3$ minutes per step in the MDP, and the panel is tilted $2\degree$ per action. All of our code for running experiments and for reproducing results is publicly available\footnote{\url{https://github.com/david-abel/solar_panels_rl/experiments}}.
+Additional relevant parameters were set as follows: $\gamma = 0.99$, time advances $3$ minutes per step in the MDP, and the panel is tilted $2\degree$ per action. All of our code for running experiments and for reproducing results is publicly available\footnote{{\it Redacted during review.}} %\url{https://github.com/david-abel/solar_panels_rl/experiments}}.
 
 % ------------------
 % --- Results ---
