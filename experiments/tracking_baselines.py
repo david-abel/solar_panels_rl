@@ -43,6 +43,11 @@ def _compute_new_times(year, month, day, hour):
 def static_policy(state, action="do_nothing"):
     return action
 
+
+
+def optimal_policy(state):
+    return "optimal"
+
 # ==========================
 # ======== TRACKERS ========
 # ==========================

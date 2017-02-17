@@ -22,7 +22,7 @@ import solar_helpers as sh
 class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
 
-    # Static constants.
+    # Static constants., 
     ACTIONS = ["panel_forward_ns", "panel_back_ns", "do_nothing", "panel_forward_ew", "panel_back_ew"]
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
@@ -41,7 +41,7 @@ class SolarOOMDP(OOMDP):
         # Mode information
         # If we are in 1-axis tracking mode, change actions accordingly.
         if not(dual_axis):
-            SolarOOMDP.ACTIONS = ["do_nothing", "panel_forward_ew", "panel_back_ew"]
+            SolarOOMDP.ACTIONS = get_single_axis_actions()
 
         # Image stuff.
         self.img_dims = 16
@@ -52,9 +52,9 @@ class SolarOOMDP(OOMDP):
         # Global information
         self.latitude_deg = latitude_deg # positive in the northern hemisphere
         self.longitude_deg = longitude_deg # negative reckoning west from prime meridian in Greenwich, England
-        self.step_panel = panel_step
+        self.panel_step = panel_step
         self.timestep = timestep
-        self.reflective_index = 0.5
+        self.reflective_index = reflective_index
 
         # Time stuff.
         self.init_time = date_time
@@ -75,8 +75,14 @@ class SolarOOMDP(OOMDP):
     def _get_day(self):
         return self.time.timetuple().tm_yday
 
+    def get_panel_step(self):
+        return self.panel_step
+
     def get_single_axis_actions(self):
         return ["do_nothing", "panel_forward_ew", "panel_back_ew"]
+
+    def get_optimal_actions(self):
+        return ["optimal"]
 
     # -------------------
     # --- CLOUD STUFF ---
@@ -132,8 +138,9 @@ class SolarOOMDP(OOMDP):
         panel_ew_deg = state.get_panel_angle_ns()
 
         if action is "optimal":
-            pass
             # compute optimal reward
+            reward = self._compute_optimal_reward(sun_altitude_deg, sun_azimuth_deg)
+
         else:
             reward = self._compute_reward(sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg)
 
@@ -163,6 +170,28 @@ class SolarOOMDP(OOMDP):
 
         return reward
 
+    '''
+    Computes the optimal reward possible for a given sun position.
+    Ignores current position.
+    '''
+    def _compute_optimal_reward(self, sun_altitude_deg, sun_azimuth_deg):
+        optimal_panel_ew = 0
+        optimal_panel_ns = 0
+        optimal_reward = -.1
+
+        # Iterate over all possible panel angles.
+        for panel_ew_deg in xrange(-90, 90, 3):
+            for panel_ns_deg in xrange(-90, 90, 3):
+
+                # Check reward.
+                reward = self._compute_reward(sun_altitude_deg, sun_azimuth_deg, panel_ew_deg, panel_ns_deg)
+                if reward > optimal_reward:
+                    optimal_panel_ns = panel_ns_deg
+                    optimal_panel_ew = panel_ew_deg
+                    optimal_reward = reward
+
+        return optimal_reward - .1 #.1 is penalty for moving.
+
     def _transition_func(self, state, action):
         '''
         Args:
@@ -172,7 +201,7 @@ class SolarOOMDP(OOMDP):
         Returns
             (OOMDP State)
         '''
-        _error_check(state, action)
+        self._error_check(state, action)
         self.time += datetime.timedelta(minutes=self.timestep)
         state_angle_ns = state.get_panel_angle_ns()
         state_angle_ew = state.get_panel_angle_ew()
@@ -183,7 +212,7 @@ class SolarOOMDP(OOMDP):
         elif self.clouds != []:
             self._move_clouds()
 
-        step = self.step_panel
+        step = self.panel_step
 
         # If we move the panel forward, increment panel angle by one step
         if action == "panel_forward_ew":
@@ -207,6 +236,10 @@ class SolarOOMDP(OOMDP):
 
         # If we do nothing, none of the angles change
         elif action == "do_nothing":
+            return self._create_state(state_angle_ew, state_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
+
+        # If the action is optimal, the new state is irrelevent
+        elif action == "optimal":
             return self._create_state(state_angle_ew, state_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
 
         else:
@@ -317,8 +350,25 @@ class SolarOOMDP(OOMDP):
             percept = "cloud_img"
         elif self.image_mode:
             percept = "img"
-        return "solarmdp_" + "p-" + str(self.step_panel) + "_" + percept
+        return "solarmdp_" + "p-" + str(self.panel_step) + "_" + percept #+ "_" + str(self.reflective_index)
 
+    def _error_check(self, state, action):
+        '''
+        Args:
+            state (State)
+            action (str)
+
+        Summary:
+            Checks to make sure the received state and action are of the right type.
+        '''
+
+        if action not in SolarOOMDP.ACTIONS and action not in self.get_optimal_actions():
+            print "Error: the action provided (" + str(action) + ") was invalid."
+            quit()
+
+        if not isinstance(state, SolarOOMDPState):
+            print "Error: the given state (" + str(state) + ") was not of the correct class."
+            quit()
 
 
 def _multivariate_gaussian(x, y, mu_vec, cov_matrix):
@@ -338,23 +388,6 @@ def _multivariate_gaussian(x, y, mu_vec, cov_matrix):
     res = numerator / denominator
     return res[0][0] + res[1][1]
 
-def _error_check(state, action):
-    '''
-    Args:
-        state (State)
-        action (str)
-
-    Summary:
-        Checks to make sure the received state and action are of the right type.
-    '''
-
-    if action not in SolarOOMDP.ACTIONS:
-        print "Error: the action provided (" + str(action) + ") was invalid."
-        quit()
-
-    if not isinstance(state, SolarOOMDPState):
-        print "Error: the given state (" + str(state) + ") was not of the correct class."
-        quit()
 
 # --- Test ---
 def main():
