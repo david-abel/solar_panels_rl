@@ -67,16 +67,16 @@ Solar energy offer a pollution free and sustainable means of harvesting energy d
 % Diagram with labels
 \begin{figure}[t]
 \begin{center}
-\includegraphics[scale=0.3]{figures/relevant_quantities.png}
+\includegraphics[scale=0.375]{figures/relevant_quantities.png}
 \caption{\dnote{3D Diagram of sun, label relevant angles}}
 \end{center}
 \end{figure}
 
 % Previous algorithms
-Developments in solar tracking have led to algorithms that are sufficiently accurate to inform control of panels, building on the early work of~\citet{spencer1971fourier,walraven1978calculating} and~\citet{michalsky1988astronomical}. Recently,~\citet{reda2004solar} developed an algorithm that computes the sun's location in the sky within $\pm 0.0003\degree$ of accuracy, achieving the highest degree of accuracy of any known algorithm, but is computationally inefficient to the point of impracticality.~\citet{Grena2008} overcomes these inefficiencies by introducing an algorithm that requires an order of magnitude fewer calculations while achieving $0.0027\degree$ of accuracy.
+Developments in solar tracking have led to algorithms that are sufficiently accurate in informing control of panels, building on the early work of~\citet{spencer1971fourier,walraven1978calculating} and~\citet{michalsky1988astronomical}. Recently,~\citet{reda2004solar} developed an algorithm that computes the sun's location in the sky within $\pm 0.0003\degree$ of accuracy, achieving the highest degree of accuracy of any known algorithm, but it is computationally inefficient to the point of impracticality.~\citet{Grena2008} overcomes these inefficiencies by introducing an algorithm that requires an order of magnitude fewer calculations while still achieving $0.0027\degree$ of accuracy.
 
 % Limitations
-However, prior literature suggests that a variety of factors contribute to the performance of a panel~\cite{King2001}, and so pointing a panel directly at the sun is not always optimal behavior. Specifically, the total solar irradiance falling on a panel is a combination of {\it direct}, {\it reflective}, and {\it diffuse} irradiance~\cite{Benghanem2011}. The diffuse irradiance typically varies between $15\%$ and $55\%$ of direct irradiance depending on factors like cloud coverage and the time of day~\cite{peterson1981ratio}, while a case study by the Cold Climate Housing Research Center in Fairbanks, Alaska reports reflective irradiance varying from $5\%$ to $25\%$ of direct irradiance~\cite{colgan2010}. The reflective irradiance varies heavily based on the percentage of irradiance reflected (albedo) off the surrounding ground surface: typical values for this percentage given by~\citet{mcevoy2003practical} vary between $17\%$ (soil), $25\%$ (grass), and $0.55\%$ (concrete). Additionally, changing weather and atmospheric conditions can affect the optimal panel orientation as well~\cite{Kelly2009}. Thus, under certain conditions, optimal performance may involve prioritizing reflective or diffuse irradiance when direct sunlight is not available.
+However, prior literature suggests that a variety of factors other than direct irradiance contribute to the performance of a panel~\cite{King2001}, and so pointing a panel directly at the sun is not always optimal behavior. Specifically, the total solar irradiance falling on a panel is a combination of {\it direct}, {\it reflective}, and {\it diffuse} irradiance~\cite{Benghanem2011}. The diffuse irradiance typically varies between $15\%$ and $55\%$ of direct irradiance, depending on factors like cloud coverage and the time of day~\cite{peterson1981ratio}, and a case study by the Cold Climate Housing Research Center in Fairbanks, Alaska reports reflective irradiance varying from $5\%$ to $25\%$ of direct irradiance~\cite{colgan2010}. The reflective irradiance varies heavily based on the percentage of irradiance reflected off the surrounding ground surface (albedo): typical values for this percentage given by~\citet{mcevoy2003practical} vary between $17\%$ (soil), $25\%$ (grass), and $0.55\%$ (concrete). Additionally, changing weather and atmospheric conditions can affect the optimal panel orientation as well~\cite{Kelly2009}. Thus, under certain conditions, optimal performance may involve prioritizing reflective or diffuse irradiance when direct sunlight is not available.
 
 As an additional consideration, tracking algorithms require as input a variety of data that require additional hardware such as a barometer, thermometer, or GPS~\cite{Grena2012}, increasing the total cost and system complexity.\footnote{Some tracking algorithms do not require the temperature and pressure but incur a cost of accuracy, such as Algorithm 1 from~\citet{Grena2012}.}
 
@@ -115,8 +115,8 @@ Quantity& Variable& Range \\
 \midrule
 latitude& $L$& $[-\pi, \pi]$ \\
 longitude& $G$&  $\left[-\frac{\pi}{2}, \frac{\pi}{2}\right]$\\
-declination& $\delta$ & $\left[-\frac{\pi}{2}, \frac{\pi}{2}\right]$ \\
-hour angle& $H$& $\left[-\frac{\pi}{2}, \frac{\pi}{2}\right]$ \\
+%declination& $\delta$ & $\left[-\frac{\pi}{2}, \frac{\pi}{2}\right]$ \\
+%hour angle& $H$& $\left[-\frac{\pi}{2}, \frac{\pi}{2}\right]$ \\
 %zenith& $z$& $[0,\pi]$ \\
 azimuth& $\Gamma$& $[-\pi, \pi]$ \\
 altitude& $\alpha$& $[-\pi, \pi]$ \\
@@ -159,7 +159,7 @@ For further background on RL, see~\citet{sutton1998reinforcement} or~\citet{kael
 
 % Agents
 \subsubsection{Agents}
-In this work, we evaluate three relatively simple agents: $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel, $SARSA$ with a linear function approximator, and LinUCB, a standard approach to Contextual Bandits. We chosen each of the linear approximators to illustrate that even efficient, simple algorithms can be effective in the domain, and chose LinUCB to evaluate the effectiveness of a standard contextual bandit approach.
+In this work, we evaluate three relatively simple agents: $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel, $SARSA$ with a linear function approximator, and LinUCB, a standard approach to Contextual Bandits. We chose each of the linear approximators to illustrate that even efficient, simple algorithms can be effective in the domain, and chose LinUCB to evaluate the effectiveness of a standard contextual bandit approach. We did not use any agents that employ Deep Learning, as this would require more computation power and storage, both of which will be limited in the solar panel real setting. 
 
 $Q$-Learning, introduced by~\citet{watkins1992q}, updates the $Q$ function via one step look aheads each experience, $\langle s, a, r, s' \rangle$, according to the gradient update rule:
 \begin{equation}
