@@ -27,7 +27,7 @@ class SolarOOMDP(OOMDP):
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=-34.25, longitude_deg=142.17, img_dims=64, dual_axis=True, image_mode=False, cloud_mode=False):
+    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=40.7, longitude_deg=142.17, img_dims=64, dual_axis=True, image_mode=False, cloud_mode=False):
 
         # Error check the lat/long.
         if abs(latitude_deg) > 90 or abs(longitude_deg) > 180:
@@ -52,9 +52,9 @@ class SolarOOMDP(OOMDP):
         # Global information
         self.latitude_deg = latitude_deg # positive in the northern hemisphere
         self.longitude_deg = longitude_deg # negative reckoning west from prime meridian in Greenwich, England
-        self.step_panel = panel_step
+        self.panel_step = panel_step
         self.timestep = timestep
-        self.reflective_index = 0.5
+        self.reflective_index = reflective_index
 
         # Time stuff.
         self.init_time = date_time
@@ -74,6 +74,9 @@ class SolarOOMDP(OOMDP):
 
     def _get_day(self):
         return self.time.timetuple().tm_yday
+
+    def get_panel_step(self):
+        return self.panel_step
 
     def get_single_axis_actions(self):
         return ["do_nothing", "panel_forward_ew", "panel_back_ew"]
@@ -209,7 +212,7 @@ class SolarOOMDP(OOMDP):
         elif self.clouds != []:
             self._move_clouds()
 
-        step = self.step_panel
+        step = self.panel_step
 
         # If we move the panel forward, increment panel angle by one step
         if action == "panel_forward_ew":
@@ -347,7 +350,7 @@ class SolarOOMDP(OOMDP):
             percept = "cloud_img"
         elif self.image_mode:
             percept = "img"
-        return "solarmdp_" + "p-" + str(self.step_panel) + "_" + percept
+        return "solarmdp_" + "p-" + str(self.panel_step) + "_" + percept #+ "_" + str(self.reflective_index)
 
     def _error_check(self, state, action):
         '''
