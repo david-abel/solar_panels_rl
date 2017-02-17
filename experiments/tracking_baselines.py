@@ -10,7 +10,7 @@ Contains tracking functions for computing the location of the sun, primarily fro
 # Python libs.
 import math as m
 import numpy
-from pysolar import solar
+from Pysolar import solar
 
 from solarOOMDP import solar_helpers as sh
 
@@ -43,6 +43,11 @@ def _compute_new_times(year, month, day, hour):
 def static_policy(state, action="do_nothing"):
     return action
 
+
+
+def optimal_policy(state):
+    return "optimal"
+    
 # ==========================
 # ======== TRACKERS ========
 # ==========================
