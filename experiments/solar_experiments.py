@@ -73,7 +73,7 @@ def setup_experiment(exp_name, loc="australia"):
 
     # Setup optimal agent
     optimal_agent = FixedPolicyAgent(tb.optimal_policy)
-    agents = [optimal_agent, grena_tracker_double_agent, static_agent, lin_approx_agent_single_rbf, lin_approx_agent_rbf]
+    agents = [optimal_agent, grena_tracker_double_agent, lin_approx_agent_single_rbf, lin_approx_agent_rbf]
 
     return agents, solar_mdp
 

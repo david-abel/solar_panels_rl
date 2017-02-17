@@ -187,7 +187,7 @@ class SolarOOMDP(OOMDP):
                     optimal_panel_ew = panel_ew_deg
                     optimal_reward = reward
 
-        return optimal_reward
+        return optimal_reward - .1 #.1 is penalty for moving.
 
     def _transition_func(self, state, action):
         '''
