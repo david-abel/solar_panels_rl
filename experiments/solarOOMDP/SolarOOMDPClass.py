@@ -27,7 +27,7 @@ class SolarOOMDP(OOMDP):
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=-34.25, longitude_deg=142.17, img_dims=64, dual_axis=True, image_mode=False, cloud_mode=False):
+    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=40.7, longitude_deg=142.17, img_dims=64, dual_axis=True, image_mode=False, cloud_mode=False):
 
         # Error check the lat/long.
         if abs(latitude_deg) > 90 or abs(longitude_deg) > 180:
