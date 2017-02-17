@@ -3,7 +3,7 @@ import math as m
 import numpy as np
 
 # Misc. imports.
-from Pysolar import solar, radiation
+from pysolar import solar, radiation
 
 CLOUD_DIFFUS_FACTOR = 0.1 # 10% of light is blocked
 
