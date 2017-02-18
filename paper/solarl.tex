@@ -161,7 +161,7 @@ For further background on RL, see~\citet{sutton1998reinforcement} or~\citet{kael
 
 % Agents
 \subsubsection{Agents}
-We evaluate two relatively simple agents (and variations thereof): $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel and $SARSA$ with a linear function approximator. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chosen each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We did not use any agents that employ Deep Learning, as this would require more computation power and storage, both of which will be limited in the solar panel real setting. 
+We evaluate two relatively simple agents (and variations thereof): $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel and $SARSA$ with a linear function approximator. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chosen each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We did not use any agents that employ Deep Learning techniques, as this would require more computation power and storage, both of which will be limited in the solar panel real setting. 
 
 $Q$-Learning, introduced by~\citet{watkins1992q}, updates the $Q$ function via one step look aheads each experience, $\langle s, a, r, s' \rangle$, according to the gradient update rule:
 \begin{equation}
