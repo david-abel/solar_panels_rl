@@ -14,8 +14,7 @@
 \newcommand{\enote}[1]{\textcolor{purple}{Emily: #1}}
 \newcommand{\mc}{\mathcal}
 \newcommand\ddfrac[2]{\frac{\displaystyle #1}{\displaystyle #2}}
-
-
+\DeclareMathOperator*{\argmax}{arg\,max}
 
 % --- Misc. ---
 \hbadness=10000 % No "underfull hbox" messages.
@@ -68,7 +67,8 @@ Solar energy offer a pollution free and sustainable means of harvesting energy d
 \begin{figure}[t]
 \begin{center}
 \includegraphics[scale=0.375]{figures/relevant_quantities.png}
-\caption{\dnote{3D Diagram of sun, label relevant angles}}
+\caption{In the solar panel control problem, the panel changes its orientation over time to maximize total exposure to solar radiant energy.}
+\label{fig:solar}
 \end{center}
 \end{figure}
 
@@ -161,7 +161,7 @@ For further background on RL, see~\citet{sutton1998reinforcement} or~\citet{kael
 
 % Agents
 \subsubsection{Agents}
-We evaluate two relatively simple agents (and variations thereof): $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel and $SARSA$ with a linear function approximator. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chosen each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We did not use any agents that employ Deep Learning, as this would require more computation power and storage, both of which will be limited in the solar panel real setting. 
+We evaluate two relatively simple agents: $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel and $SARSA$ with a linear function approximator. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chosen each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We did not use any agents that employ Deep Learning, as training Deep RL agents typically requires more computational power or even GPUs, which may be unavailable in the real solar panel setting. 
 
 $Q$-Learning, introduced by~\citet{watkins1992q}, updates the $Q$ function via one step look aheads each experience, $\langle s, a, r, s' \rangle$, according to the gradient update rule:
 \begin{equation}
@@ -185,28 +185,39 @@ The agent receives states passed through this kernel:
 \phi(s) = [\phi(s_1), \phi(s_2), \ldots, \phi(s_k)]
 \end{equation}
 
-We also test with SARSA~\cite{rummery1994line}, again with a Linear Function Approximator. The only difference from the $Q$-Learner is the update rule. The algorithm updates using the chosen next action $a'$, instead of the max:
+We also test with SARSA~\cite{rummery1994line}, again with a linear function approximator. The only difference from the $Q$-Learner is the update rule which makes SARSA an on policy learner. The algorithm updates using the chosen next action $a'$, instead of the max:
 \begin{equation}
 \theta_{i,a} = \theta_{i,a} + \alpha \left( r + \gamma Q_\theta(s',a') - Q_\theta(s,a)\right)
 \end{equation}
-Due to the online nature of the true panel control problem, SARSA is attractive as an approach on account of its on policy learning.
+For further details about these algorithms, see~\citet{geramifard2013tutorial}.
 
 % Contextual Bandits
 \subsubsection{Contextual Bandits}
 
-A simplification of the full RL problem is a non-sequential variant known as the Contextual Bandit introduced by~\citet{wang2005bandit}, which extends of the classic Multi-Armed Bandit problem~\cite{gittins1979bandit}. In the Contextual Bandit setting, the agent receives a {\it context matrix} $\bm{x}$ containing a feature vector for each action. That is, each column of $\bm{x}$ corresponds to each action's context: the entry $\bm{x}_{i,j}$ denotes the $i$-th feature of action $a_j$. At each time step, the agent chooses an action $a \in \mc{A}$, and receives payoff according to an unknown, possibly stochastic function, $R(\bm{x},a)$. Here, agents still face the exploration-exploitation dilemma but do not need to compute complex causal models of their environments or learn from delayed reward.
+A simplification of the full RL problem is a non-sequential variant known as the Contextual Bandit introduced by~\citet{wang2005bandit}, which extends of the classic Multi-Armed Bandit problem~\cite{gittins1979bandit}. In the Contextual Bandit setting, the agent receives a {\it context matrix} $\bm{x}$ containing a feature vector for each action. That is, each column of $\bm{x}$ corresponds to each action's context: the entry $\bm{x}_{i,j}$ denotes the $i$-th feature of action $a_j$. We let $\bm{x}_a$ denote the context vector associated with action $a$. At each time step, the agent chooses an action $a \in \mc{A}$, and receives payoff according to an unknown, possibly stochastic function, $R(\bm{x},a)$. Here, agents still face the exploration-exploitation dilemma but do not need to compute complex causal models of their environments or learn from delayed reward.
 
-Here we adopt the bandit framework to solar panel control to test the significance of modeling the problem as sequential. Each context is simply the received percept from the environment (there is no difference in contexts across actions). Due to its simplicity and efficiency, we experiment with the LinUCB algorithm developed by~\citet{li2010contextual}.
+We adopt the bandit framework to solar panel control to test the significance of modeling the solar panel control problem as sequential (since bandit algorithms do not model the sequential nature of the problem). Each context is simply the received percept from the environment (there is no difference in contexts across actions). Due to its simplicity and efficiency, we experiment with the LinUCB algorithm developed by~\citet{li2010contextual}.
 
-LinUCB adapts the core ideas of Upper Confidence Bound (UCB) algorithm~\cite{auer2002finite} to deal with contexts; in particular, LinUCB explicitly tracks the uncertainty associated with each action using a disjoint linear model. This uncertainty is then factored into an overall computation of the {\it score} associated with each action. At each round, the agent then selects the action with maximal score.
+LinUCB adapts the core ideas of Upper Confidence Bound (UCB) algorithm~\cite{auer2002finite} to deal with contexts; at a high level, LinUCB assumes the underlying reward is determined by a linear payoff matrix $\bm{\theta}$, and maintains a running estimate, $\hat{\bm{\theta}}$. The critical piece is the calculation of a confidence interval on the difference between the agent's estimate of the return and the true return, which is factored into an overall {\it score} associated with each action. At each round, the agent then selects the action with maximal score according to the general structure:
+\begin{equation}
+a^* = \argmax_{a \in \mc{A}} \left(\bm{x}_a \hat{\bm{\theta}} + \sigma_{a}\right)
+\end{equation}
+Where $\sigma_a$ represents the confidence interval associated with action $a$. For the full details, see~\citet{li2010contextual}.
 
-\dnote{Details on UCB?}
-
+%explicitly tracks the uncertainty associated  linear model. This uncertainty is then factored into an overall computation of the {\it score} associated with each action.
 %LinUCB was originally adopted for cases with linear payoff matrices:
 %\begin{equation}
 %\mathbb{E}\left[r \mid \bm{x}, a\right] = \bm{x}^\top \bm{\theta}_a
 %\end{equation}
-%Where $\bm{\theta}_a$ is an unknown coefficient vector. 
+%Where $\bm{\theta}_a$ is an unknown coefficient vector. Thus, the core of the algorithm is to compute an estimate, $\hat{\bm{\theta}}$, close to the true parameter $\bm{\theta}$. The core of the algorithm is the upkeep of confidence intervals on the difference between the true expected reward and the reward predicted by the agent's estimated parameter, $\hat{\bm{\theta}}$. To do so, the agent maintains a data set of $m$ context's denoted by the $m \times d$ matrix $\bm{D}$, and a matrix specifying the return of the action chosen for each round $\bm{c}$, yielding a training data set $(\bm{D}, \bm{c})$.  Li et. al. show that, for a carefully chosen constants $\kappa$ and $\tau$, with probability $1-\tau$:
+%\begin{equation}
+%\left| \bm{x}_a \hat{\bm{\theta}}_a - \mathbb{E} \left[r \mid \bm{x}, a\right] \right| = \kappa \sqrt{\bm{x}_a^\top (\bm{D}_a^\top \bm{D}_a + \mc{I})^{-1} \bm{x}_a}
+%\end{equation}
+%With $\mc{I}_d$
+%Given this confidence interval, for each given context, the agent then selects the action with the max score (a combination of the estimated return and confidence):
+%\begin{equation}
+%a_t = \argmax_{a \in \mc{A}_t} \left(\bm{x}_a^\top \hat{\bm{\theta}}_a + \kappa \sqrt{\bm{x}_a^\top \bm{D}_d^\top \bm{D} + \mc{I}_d}\right)
+%\end{equation}
 
 We now turn to describing the details of our simulation.
 
@@ -285,10 +296,12 @@ The diffuse irradiance incident angle, $\theta_f$, is given by a simple approxim
 \end{center}
 \end{figure}
 
+
 % (Step 4) Percepts
 \subsection{Generating Percepts}
 
-The final step in the simulation is to generate percepts for the RL agents and Bandit algorithm.\footnote{The tracking algorithm always receives the same information: the year, month, day, hour, longitude, and latitude.} Our most immediate plan for future work is to build a physical system to conduct experiments with RL outside of simulation. In the real setting, we plan on equipping each solar panel with a fish eye monocular camera to provide images of the sky as input for the RL algorithm. To approximate the real setting, our simulated environment supports generating percepts of three kinds:
+
+The final step in the simulation is to generate percepts for the learning algorithms.\footnote{The tracking algorithm always receives the same information: the year, month, day, hour, longitude, and latitude.} Our most immediate plan for future work is to build a physical system to conduct experiments with RL outside of simulation. In the real setting, we plan on equipping each solar panel with a fish eye monocular camera to provide images of the sky as input for the RL algorithm. To approximate the real setting, our simulated environment supports generating percepts of three kinds:
 \begin{enumerate}
 \item The panel's orientation and two angles representing the sun's true position in the sky, relative to the panel (four state variables).
 \item A $16 \times 16$ synthesized grayscale image of the clear sky ($256$ state variables, each in the range $[0,1]$).
@@ -298,36 +311,10 @@ Naturally, the dimensions of the image can be controlled. For both image percept
 
 Cloud cover is created by generating small Gaussian blobs in the synthesized images, which we then use to modify the direct irradiance that reaches the panel's surface, approximating cloudy weather conditions. The cloudy conditions are randomized each morning at 4am, with the clouds moving across the sky throughout the course of the day. Surprisingly, studies demonstrate that diffuse irradiance can be magnified by cloud cover~\cite{robinson1966solar}, but cloud cover can also decrease diffuse irradiance depending on conditions~\cite{pfister2003cloud}. Direct irradiance $(R_d)$, however, is almost always decreased by cloud cover. Thus, if a cloud sits between the panel and the sun, we reduce the direct irradiance hitting the panel's surface by a factor proportional to the clouds intensity but choose not to impact the diffuse irradiance. Each cloud is modeled as a Multivariate gaussian, with $\mu$ and $\Sigma$ randomized on creation of the cloud, and the intensity of the cloud corresponds to the value of the Gaussian. In most experiments involving cloud cover, the clouds reduce the direct irradiance by anywhere from $10\%$ to $90\%$.
 
-% ----------------------
-% -- Experiments --
-% ----------------------
-\section{Experiments}
-
-% \url{https://github.com/david-abel/simple_rl}
-We wrap these four steps inside of a Markov Decision Process (MDP) using the open source library \texttt{simple-rl}.\footnote{{\it Link redacted during review.}}. Each action of the MDP, $a \in \mc{A}$ is one of $\{\texttt{tilt N},\ \texttt{tilt E},\ \texttt{tilt S},\ \texttt{tilt W},\ \texttt{nothing}\}$. Executing the \texttt{nothing} action keeps the panel orientation fixed, while the other four each shift the panel $2\degree$ in their respective directions. Each time step is equivalent to three minutes of time passing (which is a tunable parameter). We let $\gamma=0.99$.
-
-Our core algorithms are $Q$-Learning with a Linear Function approximator, tested with (\texttt{ql-linear-rbf}) and without (\texttt{ql-linear)} a Gaussian radial basis function kernel to introduce some non-linearity, and SARSA with a linear function approximator with a Gaussian radial basis kernel (\texttt{sarsa-linear-rbf}). Each of these algorithms uses $\varepsilon$-greedy exploration with $\varepsilon$ set to $0.2$ and learning rate $\eta = 0.1$ with a standard annealing schedule. The LinUCB approach (\texttt{lin-ucb}) uses an uncertainty bound of $0.5$.
-
-Our core benchmark algorithm is Algorithm 2 from~\citet{Grena2012}, an efficient but accurate solar tracking algorithm, coupled with a controller that always points perfectly at the tracker's estimate of the sun's location. We also provide results for a fixed panel to illustrate the importance of tracking (\texttt{fixed}), and a highly idealized tracker that computes the perfect orientation at each time step to illustrate an upper bound on performance (\texttt{optimal}), and to visualize the degree of suboptimality of the other approaches.
-
-\subsection{Primary Experiments}
-We conduct three primary experiments, each with different percepts. In all experiments, all algorithms are trained online in that they never see the same state twice, presenting an especially difficult challenge for the RL agents. Each experiment is run in simulation, once in Mildora, Australia, in June 2015, and once in Reykjavik, Iceland during August 2018. The tracker is always given the data needed to estimate the location of the sun, while the percepts change for the RL agent. In the first experiment, the RL agents are given the true sun angles, $\alpha$ and $\Gamma$, and the panel's tilt angles, $\omega$ and $\phi$. The second experiment is intended to more accurately approximate solar tracking in the real world: the RL agents are synthesized greyscale image of the sky taken from the panel's tilted position, shown in Figure~\ref{fig:sun_image}. In the final experiment, the RL agents perceive a bitmap of the sky with simulated cloud coverage shown in Figure~\ref{fig:sun_image_clouds}. The reward function for all three experiments is given by Equation~\ref{eq:total_rads}, where the third experiment incorporates a small effect of cloud coverage on $R_d$. In all experiments we set the reflective index ($\rho$) to $0.5$.
-
-All of our code for running experiments and for reproducing results is publicly available.\footnote{{\it Link redacted during review.}} %\url{https://github.com/david-abel/solar_panels_rl/experiments}}.
-
-\subsection{Supplementary Experiments}
-We also conduct two supplementary experiments. The first investigates the learning speed and performance difference between a single vs. double axis controller, and the second compares the effect of different reflective indices on overall performance. For both experiments we evaluate in New York City, NY during the first five days of November 2025. We only run a subset of the algorithms on each of these experiments to best illustrate the effects of the variable of interest (number of axes, magnitude of $\rho$). For the reflective index experiment, we test with $\rho \in \{0.1,0.5,0.9\}$.
-
-% ------------------
-% --- Results ---
-% ------------------
-\subsection{Results}
-
-
 
 
 % Results (Mildura)
-\begin{figure*}[t]
+\begin{figure*}
 \begin{center}
 	\subfloat[True Sun Angles]{\includegraphics[scale=0.26]{figures/mildura/true_cumulative}} \hspace{1mm}% True sun angles percept.
 	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.26]{figures/mildura/img_cumulative}} \hspace{1mm} % Sun image percept.
@@ -339,6 +326,35 @@ We also conduct two supplementary experiments. The first investigates the learni
 \label{fig:results_aus}
 \end{center}
 \end{figure*}
+
+% ----------------------
+% -- Experiments --
+% ----------------------
+\section{Experiments}
+
+
+% \url{https://github.com/david-abel/simple_rl}
+We wrap these four steps inside of a Markov Decision Process (MDP) using the open source library \texttt{simple-rl}.\footnote{{\it Link redacted during review.}} Each action of the MDP, $a \in \mc{A}$ is one of $\{\texttt{tilt N},\ \texttt{tilt E},\ \texttt{tilt S},\ \texttt{tilt W},\ \texttt{nothing}\}$. Executing the \texttt{nothing} action keeps the panel orientation fixed, while the other four each shift the panel $2\degree$ in their respective directions. Each time step is equivalent to three minutes of time passing (which is a tunable parameter). We let $\gamma=0.99$.
+
+Our core algorithms are $Q$-Learning with a linear function approximator (\texttt{ql-lin}) and SARSA with a linear function approximator (\texttt{sarsa-lin}). Each of these algorithms uses $\varepsilon$-greedy exploration with $\varepsilon$ set to $0.2$ and learning rate $\eta = 0.1$ with a standard annealing schedule. The LinUCB approach (\texttt{lin-ucb}) uses an uncertainty bound of $0.5$.
+
+Our core benchmark algorithm is Algorithm 2 from~\citet{Grena2012}, an efficient but accurate solar tracking algorithm, coupled with a controller that always points perfectly at the tracker's estimate of the sun's location. We also provide results for a fixed panel to illustrate the importance of tracking (\texttt{fixed}), and a highly idealized tracker that computes the perfect orientation at each time step to illustrate an upper bound on performance (\texttt{optimal}), and to visualize the degree of suboptimality of the other approaches.
+
+
+
+
+
+\subsection{Primary Experiments}
+We conduct two batches of experiments, the first in Mildora Australia for four days in June 2015, and the second in Reykjavik, Iceland for eight days in July 2020. In each batch we test with the three types of percepts described in the previous section. In the first experiment, the RL agents are given the true sun angles, $\alpha$ and $\Gamma$, and the panel's tilt angles, $\omega$ and $\nu$. The second experiment is intended to more accurately approximate solar tracking in the real world: the RL agents are synthesized greyscale image of the sky taken from the panel's tilted position, shown in Figure~\ref{fig:sun_image}. In the final experiment, the RL agents perceive a bitmap of the sky with simulated cloud coverage shown in Figure~\ref{fig:sun_image_clouds}. The reward function for all three experiments is given by Equation~\ref{eq:total_rads}, where the third experiment incorporates a small effect of cloud coverage on $R_d$. In all three experiments we set the reflective index ($\rho$) to $0.5$.
+
+\subsection{Supplementary Experiments}
+We also conduct two supplementary experiments. The first investigates the learning speed and performance difference between a single vs. double axis controller, and the second compares the effect of different reflective indices on overall performance. For both experiments we evaluate in New York City, NY during the first five days of August 2018. We only run a subset of the algorithms on each of these experiments to best illustrate the effects of the variable of interest (number of axes, magnitude of $\rho$). For the reflective index experiment, we test with $\rho \in \{0.1,0.5,0.9\}$.
+
+All of our code for running experiments and for reproducing results is publicly available.\footnote{{\it Link redacted during review.}} %\url{https://github.com/david-abel/solar_panels_rl/experiments}}.
+
+
+
+
 
 % Results (reykjavik)
 \begin{figure*}
@@ -355,10 +371,25 @@ We also conduct two supplementary experiments. The first investigates the learni
 \end{figure*}
 
 
+% ------------------
+% --- Results ---
+% ------------------
+\subsection{Results}
+
+
+We first note that the \texttt{grena-tracker} consistently outperforms the \texttt{fixed-panel} by around $25\%$, corroborating the evidence advanced by previous literature~\cite{Eke2012,mousazadeh2009review,clifford2004design}. We take this alignment as further support of the accuracy of our simulation.
+
+In Figure~\ref{fig:results_aus} illustrates the cumulative irradiance exposed to each panel in the Australia experiments for each percept type. With the simple percept, {\it all} of the learning algorithms outperform the baseline tracker and fixed panel by a substantial amount. When just the image is provided, \texttt{lin-ucb} achieves by far the best performance; we hypothesize that this is due to the non-sequential nature of this variant of the task. When just the sun is present, there is little incentive to forecast expected future reward beyond the immediate next step. Conversely, we see that when clouds are present, \texttt{lin-ucb} substantially underperforms, and is dominated by the other learners.
+
+Figure~\ref{fig:results_ice} shows the same experiments simulated in Iceland. The results are largely the same, though we note that the \texttt{grena-tracker} does substantially better in Iceland.
+
+
+
+
 
 
 % Results (single axis vs dual axis)
-\begin{figure}
+\begin{figure}[h]
 \begin{center}
 \includegraphics[scale=0.26]{figures/saxis_vs_daxis_true}
 \caption{Comparison of single axis to dual axis approach with the true sun percepts.}
@@ -396,6 +427,6 @@ In the future, the clear next step is to implement a functioning RL controller o
 % --- Bilbiography ---
 % ------------------------
 \bibliographystyle{ijcai/named}
-\bibliography{../solar}
+\footnotesize{\bibliography{../solar}}
 
 \end{document}
