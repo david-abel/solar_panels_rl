@@ -50,9 +50,9 @@ Solar panels sustainably harvest energy from the sun. To improve performance, pa
 %
 However, always pointing a panel directly at the sun does not account for diffuse irradiance in the sky, reflected irradiance from the ground and surrounding surfaces, or changing weather conditions (such as cloud coverage), all of which are contributing factors to the total energy harvested by a solar panel.
 %
-In this work, we validate the hypothesis that the computational learning paradigm of Reinforcement Learning (RL) can increase the total energy harvested by solar panels by dynamically accounting for these other factors. We advocate for the use of RL for solar panel control due to its {\it effectiveness}, {\it negligible cost}, and {\it versatility}. Our contribution is twofold: (1) adapting typical RL algorithms to the task of improving solar panel performance, and (2) a simulation based on typical solar and irradiance models for experimenting with solar panel control.
+In this work, we show that the computational learning paradigm of Reinforcement Learning (RL) can increase the total energy harvested by solar panels by dynamically accounting for these other factors. We advocate for the use of RL for solar panel control due to its {\it effectiveness}, {\it negligible cost}, and {\it versatility}. Our contribution is twofold: (1) adapting typical RL algorithms to the task of improving solar panel performance, and (2) a simulation based on typical solar and irradiance models for experimenting with solar panel control.
 %
-We evaluate the utility of various RL approaches compared to an idealized tracker, an efficient state of the art tracking algorithm, and a fixed panel in our simulated environment. We experiment across different time scales, in different places on Earth, and with dramatically different percepts (sun coordinates, and synthesized images of the sky with and without clouds), consistently demonstrating that simple RL algorithms improve over existing baselines.
+We evaluate the utility of various RL approaches compared to an idealized controller, an efficient state of the art tracking algorithm, and a fixed panel in our simulated environment. We experiment across different time scales, in different places on earth, and with dramatically different percepts (sun coordinates and raw images of the sky with and without clouds), consistently demonstrating that simple RL algorithms improve over existing baselines.
 \end{abstract}
 
 
@@ -61,7 +61,9 @@ We evaluate the utility of various RL approaches compared to an idealized tracke
 % ----------------------
 \section{Introduction}
 % Solare Panels and Solar Tracking.
-Solar energy offer a pollution free and sustainable means of harvesting energy directly from the sun. Considerable effort has been directed toward maximizing the efficiency of end to end solar systems, including the design of photovoltaic cells~\cite{Jervase2001,li2012molecular}, engineering new photovoltaic architectures and materials~\cite{li2005high}, and solar tracking systems~\cite{camacho2012control}. Solar tracking is especially important for maximizing performance of solar panels~\cite{Eke2012,Rizk2008,King2001}. Given the proper sensors and hardware, a tracking algorithm computes the relative location of the sun in the sky throughout the day and a controller orients the panel to point at the sun. The goal is to minimize the angle of incidence between incoming solar radiant energy and the grid of photovoltaic cells, as in~\citet{Eke2012,Benghanem2011,King2001} and~\citet{kalogirou1996design}. Prior work has consistently demonstrated that panels using a tracking system increase the total energy by a substantial amount:~\citet{Eke2012} report that a dual-axis tracker yielded 71 kW/h, compared to a fixed panel's yield of 52 kW/h on the same day. Eke and Senturk also report energy harvesting gains of dual-axis tracking systems over fixed systems varying from 15\% to 40\%, depending on the time of year.~\citet{mousazadeh2009review} report that gains from tracking can vary between 0\% and 100\%, while~\citet{clifford2004design} report a gain of $23\%$ due to tracking in simulation. Clearly, solar tracking and control can dramatically benefit solar photovoltaic systems.
+Solar energy offers a pollution free and sustainable means of harvesting energy directly from the sun. Considerable effort has been directed toward maximizing the efficiency of end to end solar systems, including the design of photovoltaic cells~\cite{Jervase2001,li2012molecular}, engineering new photovoltaic architectures and materials~\cite{li2005high}, and solar tracking systems~\cite{camacho2012control}. Solar tracking is especially important for maximizing performance of solar panels~\cite{Eke2012,Rizk2008,King2001}. Given the proper sensors and hardware, a tracking algorithm computes the relative location of the sun in the sky throughout the day and a controller orients the panel to point at the sun, illustrated in Figure~\ref{fig:solar}. The goal is to minimize the angle of incidence between incoming solar radiant energy and the grid of photovoltaic cells, as in~\citet{Eke2012,Benghanem2011,King2001} and~\citet{kalogirou1996design}.
+
+Prior work has consistently demonstrated that panels using a tracking system improve performance:~\citet{Eke2012} report that a dual-axis tracker yielded 71 kW/h, compared to a fixed panel's yield of 52 kW/h on the same day. Eke and Senturk also report energy harvesting gains of dual-axis tracking systems over fixed systems varying from 15\% to 40\%, depending on the time of year.~\citet{mousazadeh2009review} report that gains from tracking can vary between 0\% and 100\%, while~\citet{clifford2004design} report a gain of $23\%$ due to tracking in simulation. Clearly, solar tracking and control can dramatically benefit solar photovoltaic systems.
 
 % Diagram with labels
 \begin{figure}[t]
@@ -73,16 +75,16 @@ Solar energy offer a pollution free and sustainable means of harvesting energy d
 \end{figure}
 
 % Previous algorithms
-Developments in solar tracking have led to algorithms that are sufficiently accurate to inform control of panels, building on the early work of~\citet{spencer1971fourier,walraven1978calculating} and~\citet{michalsky1988astronomical}. Recently,~\citet{reda2004solar} developed an algorithm that computes the sun's location in the sky within $\pm 0.0003\degree$ of accuracy, achieving the highest degree of accuracy of any known algorithm, but is computationally inefficient to the point of impracticality.~\citet{Grena2008} overcomes these inefficiencies with a tracking algorithm that requires an order of magnitude fewer calculations than the approach of Reda and Andreas, while still achieving $0.0027\degree$ of accuracy.
+Recent work in solar tracking has focused on algorithms that are sufficiently accurate to inform control of panels, building on the early work of~\citet{spencer1971fourier,walraven1978calculating} and~\citet{michalsky1988astronomical}. The algorithm introduced by~\citet{reda2004solar} computes the sun's location in the sky within $\pm 0.0003\degree$ of accuracy, achieving the highest degree of accuracy of any known algorithm, but is computationally inefficient to the point of impracticality.~\citet{Grena2008} overcomes these inefficiencies with a tracking algorithm that requires an order of magnitude fewer calculations than the approach of Reda and Andreas, while still achieving $0.0027\degree$ of accuracy.
 
 % Limitations
-However, prior literature suggests that a variety of factors contribute to the performance of a panel~\cite{King2001}, and so pointing a panel directly at the sun is not always optimal behavior. Specifically, the total solar irradiance falling on a panel is a combination of {\it direct}, {\it reflective}, and {\it diffuse} irradiance~\cite{Benghanem2011}. The diffuse irradiance typically varies between $15\%$ and $55\%$ of direct irradiance depending on factors like cloud coverage and the time of day~\cite{peterson1981ratio}, while a case study by the Cold Climate Housing Research Center in Fairbanks, Alaska reports reflective irradiance varying from $5\%$ to $25\%$ of direct irradiance~\cite{colgan2010}. The reflective irradiance varies heavily based on the percentage of irradiance reflected off the surrounding ground surface: typical values for this percentage given by~\citet{mcevoy2003practical} vary between $17\%$ (soil), $25\%$ (grass), and $55\%$ (concrete). Additionally, changing weather and atmospheric conditions can affect the optimal panel orientation~\cite{Kelly2009}. Thus, optimal performance may involve prioritizing reflective or diffuse irradiance when direct sunlight is not available.
+However, prior literature suggests that a variety of factors contribute to the performance of a panel~\cite{King2001}, and thus, pointing a panel directly at the sun is not always optimal behavior. Specifically, the total solar irradiance falling on a panel is a combination of {\it direct}, {\it reflective}, and {\it diffuse} irradiance~\cite{Benghanem2011}. The diffuse irradiance typically varies between $15\%$ and $55\%$ of direct irradiance depending on factors like cloud coverage and the time of day~\cite{peterson1981ratio}, while a case study by the Cold Climate Housing Research Center in Fairbanks, Alaska reports reflective irradiance varying from $5\%$ to $25\%$ of direct irradiance~\cite{colgan2010}. The reflective irradiance varies heavily based on the percentage of irradiance reflected off the surrounding ground surface: typical values for this percentage given by~\citet{mcevoy2003practical} vary between $17\%$ (soil), $25\%$ (grass), and $55\%$ (concrete). Additionally, changing weather and atmospheric conditions can affect the optimal panel orientation~\cite{Kelly2009}. Thus, optimal performance may involve prioritizing reflective or diffuse irradiance when direct sunlight is not available.
 
 % Others require extra hardware.
-As an additional consideration, tracking algorithms take as input a variety of data that require additional hardware such as a barometer, thermometer, or GPS~\cite{Grena2012}, increasing the total cost and system complexity.\footnote{Some tracking algorithms do not require the temperature and pressure but incur a cost of accuracy, such as Algorithm 1 from~\citet{Grena2012}.}
+There are two additional shortcomings to the classical tracking approach. First, tracking algorithms take as input a variety of data that require additional hardware such as a barometer, thermometer, or GPS~\cite{Grena2012}, increasing the total cost and system complexity.\footnote{Some tracking algorithms do not require the temperature and pressure but incur a cost of accuracy, such as Algorithm 1 from~\citet{Grena2012}.} Second, tracking algorithms are only accurate for a fixed window of time: the algorithm of~\citet{Grena2008} is noted as accurate until 2023 AD (due to the subtle movements of the earth and sun).
 
 % RL for solar tracking.
-In this work, we advocate for the use of the computational paradigm of Reinforcement Learning (RL) to optimize solar panel performance. Using RL, a learned solar panel controller can account for weather change, cloud coverage, and diverse reflective indices of surroundings, offering an efficient yet adaptive solution that can optimize for the given availability of each type of solar irradiance without the need for complex hardware. Our primary contribution is twofold:
+In this work, we advocate for the use of the learning and sequential decision making paradigm of Reinforcement Learning (RL) to optimize solar panel performance. Using RL, a learned solar panel controller can account for weather change, cloud coverage, and diverse reflective indices of surroundings, offering an efficient yet adaptive solution that can optimize for the given availability of each type of solar irradiance without the need for complex hardware, regardless of the location or year. Our primary contribution is twofold:
 \begin{enumerate}
 \item The advancement of a highly relevant problem as an application area for RL, with a high fidelity simulation built using recent models of solar irradiance.
 \item The validation of the utility of RL approaches for solar panel control.
@@ -97,7 +99,7 @@ First, some background on solar tracking and RL.
 
 % Solar Tracking Background
 \subsection{Solar Tracking}
-The amount of solar radiant energy contacting a surface on the Earth's surface (per unit area, per unit time) is called {\it irradiance}~\cite{goswami2000principles}.  We denote the total irradiance hitting a panel as $R_t$, which, per the models developed by~\citet{kamali2006estimating}, is approximated by the sum of the {\it direct} irradiance, $R_d$, {\it diffuse} irradiance (light from the sky), $R_f$, and {\it reflective} irradiance, $R_r$ (reflected off the ground or other surfaces). Each of these components is modified by a scalar, $\theta_d, \theta_f, \theta_r \in [0,1]$, denoting the effect of the angle of incidence between oncoming solar rays and the panel's orientation, yielding the total:
+The amount of solar radiant energy contacting a surface on the earth's surface (per unit area, per unit time) is called {\it irradiance}~\cite{goswami2000principles}.  We denote the total irradiance hitting a panel as $R_t$, which, per the models developed by~\citet{kamali2006estimating}, is approximated by the sum of the {\it direct} irradiance, $R_d$, {\it diffuse} irradiance (light from the sky), $R_f$, and {\it reflective} irradiance, $R_r$ (reflected off the ground or other surfaces). Each of these components is modified by a scalar, $\theta_d, \theta_f, \theta_r \in [0,1]$, denoting the effect of the angle of incidence between oncoming solar rays and the panel's orientation, yielding the total:
 \begin{equation}
 R_t = R_d \theta_d + R_f \theta_f + R_r \theta_r
 \label{eq:total_rads}
@@ -105,7 +107,7 @@ R_t = R_d \theta_d + R_f \theta_f + R_r \theta_r
 Additionally, the components $R_d$ and $R_f$ are known to be effected by cloud coverage~\cite{li2004overcast,pfister2003cloud,tzoumanikas2016effect}. We attend to these details in describing our simulation in Section~\ref{sec:simulation}.
 
 % Controller for solar panel.
-A controller for a solar panel then seeks to maximize total irradiance, $R_t$, hitting the panel's surface. In the case of solar trackers, a running assumption is that optimal behavior is generally to point the panel such that its normal vector is pointing at the sun, thus the desire for accurate solar tracking algorithms. There are many types of tracking and control methods, only a few of which we discuss in this work; for an in depth survey of solar tracking techniques, see~\citet{mousazadeh2009review}.
+A controller for a solar panel then seeks to maximize total irradiance, $R_t$, hitting the panel's surface. In the case of solar trackers, a running assumption is that optimal behavior is generally to point the panel such that its normal vector is pointing at the sun, thus the desire for accurate solar tracking algorithms. There are many types of tracking methods, only a few of which we discuss in this work; for an in depth survey of solar tracking techniques, see~\citet{mousazadeh2009review}.
 
 % --- Table of Quantities ---
 {\renewcommand{\arraystretch}{1.2}%
@@ -133,11 +135,11 @@ ground reflective index& $\rho$& $[0,1]$ \\
 % RL Background
 \subsection{RL Background}
 
-Reinforcement Learning (RL) is a computational learning paradigm in which an agent learns to maximize an unknown reward function through repeated interaction with the agent's environment. In this work we model the environment as a Markov Decision Process (MDP)~\cite{puterman2014markov}. An MDP is a five tuple, $\langle \mc{S}, \mc{A}, \mc{R}, \mc{T}, \gamma \rangle$, where:
+Reinforcement Learning (RL) is a computational learning paradigm in which an agent learns to make decisions that maximize an unknown reward function through repeated interaction with the agent's environment. In this work we model the environment as a Markov Decision Process (MDP)~\cite{puterman2014markov}. An MDP is a five tuple, $\langle \mc{S}, \mc{A}, \mc{R}, \mc{T}, \gamma \rangle$, where:
 \begin{enumerate}
 \item $\mc{S}$ is a set of states
 \item $\mc{A}$ is a set of actions
-\item $\mc{R} : \mc{S} \times \mc{A} \longmapsto [0,\textsc{RMax}] $ is a reward function.
+\item $\mc{R} : \mc{S} \times \mc{A} \longmapsto \mathbb{R}$ is a reward function. Here we assume the codomain is the real interval $[0,\textsc{RMax}] $ WLOG, for some constant $\textsc{RMax}$.
 \item $\mc{T}(s' \mid s,a)$ is a probability distribution on states given a state and action
 \item $\gamma \in (0,1)$ is a discount factor, indicating how much the agent prefers immediate reward over future reward.
 \end{enumerate}
@@ -152,21 +154,21 @@ Also of interest is the {\it action-value function}, $Q^*: \mc{S} \times \mc{A} 
 Q^*(s,a) = \mc{R}(s,a) + \gamma \sum_{s'} \mc{T}(s' \mid s,a) V^*(s')
 \end{equation}
 
-Given a policy, $\pi$, the value under the policy is defined by:
-\begin{equation}
-V^\pi(s) = \mc{R}(s, \pi(s)) + \gamma \sum_{s'} \mc{T}(s' \mid s, \pi(s)) V^\pi(s')
-\end{equation}
+%Given a policy, $\pi$, the value under the policy is defined by:
+%\begin{equation}
+%V^\pi(s) = \mc{R}(s, \pi(s)) + \gamma \sum_{s'} \mc{T}(s' \mid s, \pi(s)) V^\pi(s')
+%\end{equation}
 
 For further background on RL, see~\citet{sutton1998reinforcement} or~\citet{kaelbling1996reinforcement}.
 
 % Agents
 \subsubsection{Agents}
 
-We evaluate two relatively simple agents: $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel and $SARSA$ with a linear function approximator. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chose each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We chose note to experiment with any Deep RL agents, as these typically require more computation power (and often GPUs), which will may be unavailable limited in the real solar panel setting. However, this could be an area of further exploration.
+We experiment with two relatively simple agents: $Q$-Learning and $SARSA$, each with a Gaussian radial basis function and linear function approximator to estimate the $Q$ value. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chose each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective for solar control. We do not to experiment with any Deep RL agents, as these typically require additional computational power (and often GPUs), which will may be unavailable limited in the real solar panel setting. However, this could be an area of further exploration, particularly when we move out of simulation.
 
-$Q$-Learning, introduced by~\citet{watkins1992q}, updates the $Q$ function via one step look aheads each experience, $\langle s, a, r, s' \rangle$, according to the gradient update rule:
+$Q$-Learning, introduced by~\citet{watkins1992q}, maintains an estimate of $Q^*$ via one step look aheads each experience, $\langle s, a, r, s' \rangle$, according to the gradient update rule:
 \begin{equation}
-Q(s,a) = (1-\eta) Q(s,a) + \eta(r + \gamma \max_{a'} Q(s', a'))
+\hat{Q}(s,a) = (1-\eta) \hat{Q}(s,a) + \eta(r + \gamma \max_{a'} \hat{Q}(s', a'))
 \end{equation}
 Where $\eta \in [0,1]$ is a learning rate. The linear approximation scales tabular $Q$ learning to domains where states or observables are described by a high dimensional feature vector, $\bm{s} = [s_1, s_2, \ldots, s_k]$. The $Q$ function is parameterized by the $k \times |\mc{A}|$ matrix $w$, where each column corresponds to an action's parameters for each state variable. $Q^*$ is then approximated as:
 \begin{equation}
@@ -177,31 +179,38 @@ The parameters are updated via the gradient update rule, again given a single ex
 w_a = w_a + \eta \left( r + \gamma \max_{a'} Q_\theta(s',a') - Q_w(s,a)\right)
 \end{equation}
 
-To introduce some non-linearity, we apply a Gaussian radial basis kernel to each feature. That is, let:
+To introduce some non-linearity, we apply a Gaussian radial basis function to each feature. That is, let:
 \begin{equation}
 \phi(s_i) = e^{-(s_i^2)}
 \end{equation}
-The agent receives states passed through this kernel:
+The agent receives states as:
 \begin{equation}
 \phi(s) = [\phi(s_1), \phi(s_2), \ldots, \phi(s_k)]
 \end{equation}
 
-We also test with SARSA~\cite{rummery1994line}, again with a linear function approximator. The only difference from the $Q$-Learner is the update rule which makes SARSA an on policy learner. The algorithm updates using the chosen next action $a'$, instead of the max:
+We also test with SARSA~\cite{rummery1994line}, again with a linear function approximator. SARSA maintains an estimate of $Q^*$ using the chosen next action $a'$, instead of the max:
 \begin{equation}
 w_a = w_a + \alpha \left( r + \gamma Q_w(s',a') - Q_w(s,a)\right)
 \end{equation}
-We pair each of these algorithms with the naive $\varepsilon$-greedy exploration with $\varepsilon$ set to $0.3$ and learning rate $\eta = 0.1$ with a standard annealing schedule. For further details about these algorithms, see~\citet{geramifard2013tutorial}.
+We pair each of these algorithms with the naive $\varepsilon$-greedy policy, which chooses actions according to:
+\begin{equation}
+\pi^\varepsilon(s) = \begin{cases}
+\argmax_a \hat{Q}(s,a)& X = 0, X \sim \text{Bern}(\varepsilon) \\
+a \sim \text{Unif}(\mc{A})& X = 1, X \sim \text{Bern}(\varepsilon) \\
+\end{cases}
+\end{equation}
+Where $\text{Unif}(\mc{A})$ is the uniform distribution on actions, and $\text{Bern}(\varepsilon)$ is a Bernoulli distribution with parameter $\varepsilon$. For further details about these algorithms, see~\citet{geramifard2013tutorial}.
 
 % Contextual Bandits
 \subsubsection{Contextual Bandits}
 
 A simplification of the full RL problem is a non-sequential variant known as the Contextual Bandit introduced by~\citet{wang2005bandit}, which extends of the classic Multi-Armed Bandit problem~\cite{gittins1979bandit}. In the Contextual Bandit setting, the agent receives a {\it context matrix} $\bm{x}$ containing a feature vector for each action. That is, each column of $\bm{x}$ corresponds to each action's context: the entry $\bm{x}_{i,j}$ denotes the $i$-th feature of action $a_j$. We let $\bm{x}_a$ denote the context vector associated with action $a$. At each time step, the agent chooses an action $a \in \mc{A}$, and receives payoff according to an unknown, possibly stochastic function, $R(\bm{x},a)$. Here, agents still face the exploration-exploitation dilemma but do not need to compute complex causal models of their environments or learn from delayed reward.
 
-We adopt the bandit framework to solar panel control to test the significance of modeling the solar panel control problem as sequential (since bandit algorithms do not model the sequential nature of the problem). Each context is simply the received percept from the environment (there is no difference in contexts across actions). Due to its simplicity and efficiency, we experiment with the LinUCB algorithm developed by~\citet{li2010contextual}.
+We adopt the bandit framework to solar panel control to test the significance of modeling the solar panel control problem as sequential. The context vector for each action is the received percept from the environment (there is no difference in contexts across actions). Due to its simplicity and efficiency, we experiment with the LinUCB algorithm developed by~\citet{li2010contextual}.
 
-LinUCB adapts the core ideas of Upper Confidence Bound (UCB) algorithm~\cite{auer2002finite} to deal with contexts; at a high level, LinUCB assumes the underlying reward is determined by a linear payoff matrix $\bm{\theta}$, and maintains a running estimate, $\hat{\bm{\theta}}$. The critical piece is the calculation of a confidence interval on the difference between the agent's estimate of the return and the true return, which is factored into an overall {\it score} associated with each action. At each round, the agent then selects the action with maximal score according to the general structure:
+LinUCB adapts the core ideas of Upper Confidence Bound (UCB) algorithm~\cite{auer2002finite} to deal with contexts. At a high level, LinUCB assumes the underlying reward is determined by a linear payoff matrix $\bm{\theta}$, and maintains a running estimate, $\hat{\bm{\theta}}$. The critical piece is the exploration strategy, which involves calculating the confidence interval on the difference between the agent's estimate of the return and the true return, which is factored into an overall {\it score} for each action. At each round, the agent then selects the action with maximal score according to the general structure:
 \begin{equation}
-a^* = \argmax_{a \in \mc{A}} \left(\bm{x}_a \hat{\bm{\theta}} + \sigma_{a}\right)
+a^* = \argmax_{a \in \mc{A}} \left(\bm{x}_a \hat{\bm{\theta}}_a + \sigma_{a}\right)
 \end{equation}
 Where $\sigma_a$ represents the confidence interval associated with action $a$. For the full details, see~\citet{li2010contextual}.
 
@@ -238,7 +247,7 @@ We introduce a high fidelity simulated environment to test the validity of RL fo
 
 % (Step 1) Sun location in the sky.
 \subsection{Sun's location in the sky}
-For a given latitude, longitude, year, month, day, and time, we simulate the relative positions of the sun to the specified location on Earth. Our simulation computes the sun's altitude $\alpha$ (angle: degrees above the horizon) and azimuth $\Gamma$ (angle: clockwise degrees along the horizon relative to North) using using the highly accurate tracker algorithm from~\citet{reda2004solar}, implemented in the library \texttt{pysolar}.\footnote{\url{pysolar.org}}. For space constraints, we do not divulge the full computations. Instead, note that a quick approximation is given by:
+For a given latitude, longitude, year, month, day, and time, we simulate the relative positions of the sun to the specified location on earth. Our simulation computes the sun's altitude $\alpha$ (angle: degrees above the horizon) and azimuth $\Gamma$ (angle: clockwise degrees along the horizon relative to North) using the highly accurate tracker algorithm from~\citet{reda2004solar} implemented in the open source library \texttt{pysolar}.\footnote{\url{pysolar.org}}. For space constraints, we do not divulge the full computations. Instead, note that a quicker approximation (also available in \texttt{pysolar}) is given by:
 % --- Math about \alpha and \Gamma ---
 \begin{align}
 \alpha &= \arcsin(\cos L \cos \delta \cos H + \sin L \sin \delta)\\
@@ -265,17 +274,17 @@ Where $n \in [1:365]$ is a day of the year.
 
 % (Step 3) angles.
 \subsection{Computing $\pmb{\theta_d, \theta_f, \theta_r}$}
-Given the angles describing the panel's orientation ($\nu$: north-south tilt, $\omega$: east-west tilt), we then simulate the amount of total irradiance actually hitting the panel's surface, given the panel's orientation relative to the sun. The models of~\citet{masters2013renewable} define this angle of incidence as the $\cos$-similarity between the panel's normal vector and the sun's vector (with the panel as the origin):
+Given the two angles describing the panel's orientation ($\nu$: north-south tilt, $\omega$: east-west tilt), we simulate the amount of total irradiance actually hitting the panel's surface, given the panel's orientation relative to the sun. The models of~\citet{masters2013renewable} give $\theta_t$ in terms of the $\cos$-similarity between the panel's normal vector and the sun's vector (with the panel as the origin):
 % --- Math about \theta_d, \theta_f, \theta_r. ---
 \begin{align*}
 \vec{p} &= \left[ \sin(\nu)  \cos(\omega), \cos(\nu)  \cos(\omega), \cos(\nu) \cos(\omega) \right] \\
 \vec{s} &= \left[ \sin(\pi - \Gamma)  \cos(\alpha), \cos(\pi - \Gamma)  \cos(\alpha), \sin(\alpha) \right]
 \end{align*}
 We then compute $\theta_d$ as follows:
-\begin{multline}
+\begin{multline*}
 \theta_d = \frac{\vec{p} \cdot \vec{s}}{||\vec{p}|| ||\vec{s} ||} = \sin(\nu)  \cos(\omega)  \sin(\pi - \Gamma)  \cos(\alpha)\ + \\
 \cos(\nu)  \cos(\omega)  \cos(\pi - \Gamma)  \cos(\alpha) +  \cos(\nu) \cos(\omega)  \sin(\alpha) 
-\end{multline}
+\end{multline*}
 
 The diffuse irradiance incident angle, $\theta_f$, is given by a simple approximation: the solar collector is exposed to whatever fraction of the sky it points to, while $\theta_r$ is given by the fraction of the ground the collector points to:
 \begin{equation}
@@ -301,13 +310,13 @@ The diffuse irradiance incident angle, $\theta_f$, is given by a simple approxim
 % (Step 4) Percepts
 \subsection{Generating Percepts}
 
-The final step in the simulation is to generate percepts for the learning algorithms.\footnote{The tracking algorithm always receives the same information: the year, month, day, hour, longitude, and latitude.} Our most immediate plan for future work is to build a physical system to conduct experiments with RL outside of simulation. In the real setting, we plan on equipping each solar panel with a fish eye monocular camera to provide images of the sky as input for the RL algorithm. To approximate the real setting, our simulated environment supports generating percepts of three kinds:
+The final step in the simulation is to generate percepts for the learning algorithms.\footnote{The tracking algorithm always receives the same information: the year, month, day, hour, longitude, and latitude.} Our most immediate plan for future work is to build a physical system to conduct experiments with RL outside of simulation. In the real setting, we plan on equipping each solar panel with a fish eye monocular camera to provide images of the sky as input for the RL algorithm. To approximate the real setting, our simulated environment supports percepts of three kinds:
 \begin{enumerate}
 \item The panel's orientation and two angles representing the sun's true position in the sky, relative to the panel (four state variables).
 \item A $16 \times 16$ synthesized grayscale image of the clear sky ($256$ state variables, each in the range $[0,1]$).
 \item A $16\times 16$ synthesized grayscale image of the sky with simulated cloud cover ($256$ state variables, each in the range $[0,1]$).
 \end{enumerate}
-Naturally, the dimensions of the image can be controlled. For both image percepts, the sky angle changes as the panel moves (estimating the behavior of having a fixed camera mounted to the panel).
+For both image percepts, the perceived fraction of the sky changes as the panel moves to approximate having the camera mounted to the panel.
 
 
 \begin{figure*}[t]
@@ -338,19 +347,19 @@ Cloud cover is generated as Gaussian blobs in the synthesized images, which we t
 
 
 % \url{https://github.com/david-abel/simple_rl}
-We wrap these four steps inside of a Markov Decision Process (MDP) using the open source library \texttt{simple-rl}.\footnote{{\it Link redacted during review.}} Each action of the MDP, $a \in \mc{A}$ is one of $\{\texttt{tilt N},\ \texttt{tilt E},\ \texttt{tilt S},\ \texttt{tilt W},\ \texttt{nothing}\}$. Executing the \texttt{nothing} action keeps the panel orientation fixed, while the other four each shift the panel $2\degree$ in their respective directions. Each time step is equivalent to three minutes of time passing (which is a tunable parameter). We let $\gamma=0.99$.
+We wrap these four steps inside of a Markov Decision Process (MDP) using the open source library \texttt{simple-rl}.\footnote{{\it Link redacted during review.}} The action space consists of five actions: $\mc{A} = \{\texttt{tilt N},\ \texttt{tilt E},\ \texttt{tilt S},\ \texttt{tilt W},\ \texttt{nothing}\}$. Executing the \texttt{nothing} action keeps the panel orientation fixed, while the other four each shift the panel $2\degree$ in their respective directions. Each time step is equivalent to three minutes of time passing (which is a tunable parameter). We let $\gamma=0.99$.
 
-Our core algorithms are $Q$-Learning with a linear function approximator (\texttt{ql-lin}) and SARSA with a linear function approximator (\texttt{sarsa-lin}). 
+Our core algorithms are $Q$-Learning (\texttt{ql-lin}) and SARSA (\texttt{sarsa-lin}) each with a linear function approximator and a Gaussian radial basis function. We set $\varepsilon=0.3$ and learning rate $\eta = 0.1$ with a standard annealing schedule. 
 
-Our core benchmark algorithm is Algorithm 2 from~\citet{Grena2012}, an efficient but accurate solar tracking algorithm, coupled with a controller that always points perfectly at the tracker's estimate of the sun's location. We also provide results for a fixed panel to illustrate the importance of tracking (\texttt{fixed}), and a highly idealized tracker that computes the perfect orientation at each time step to illustrate an upper bound on possible performance (\texttt{optimal}), and to visualize the degree of suboptimality of the other approaches.
+Our core benchmark algorithm is Algorithm 2 from~\citet{Grena2012}, an efficient but accurate solar tracking algorithm, coupled with a controller that always points perfectly at the tracker's estimate of the sun's location. We also provide results for a fixed panel to illustrate the importance of tracking (\texttt{fixed}), and a highly idealized controller that computes the perfect orientation at each time step to illustrate an upper bound on possible performance (\texttt{optimal}), and to visualize the degree of sub-optimality of the other approaches.
 
 
 %\subsection{Primary Experiments}
-We conduct two batches of experiments, the first in Mildora Australia for four (simulated) days in June 2015, and the second in Reykjavik, Iceland for eight (simulated) days in July 2020. In each location we test with the three types of percepts described in the previous section, where each algorithm receives a percept every (simulated) three minutes, and can shift the panel once during those three minutes. In Australia the agent's receive 2000 percepts per run, and in Iceland the agents receive 4000 percepts. In all three experiments we set the reflective index ($\rho$) to $0.5$.
+We conduct two batches of experiments, the first in Mildora, Australia for four (simulated) days in June 2015, and the second in Reykjavik, Iceland for eight (simulated) days in July 2020. In each location we test with the three types of percepts described in the previous section, where each algorithm receives a percept every (simulated) three minutes, and can shift the panel once during those three minutes. In Australia the agent's receive 2000 percepts per run, and in Iceland the agents receive 4000 percepts. In all three experiments we set the reflective index ($\rho$) to $0.5$.
 
 %In the first experiment, the RL agents are given the true sun angles, $\alpha$ and $\Gamma$, and the panel's tilt angles, $\omega$ and $\nu$. The second experiment is intended to more accurately approximate solar tracking in the real world: the RL agents are synthesized greyscale image of the sky taken from the panel's tilted position, shown in Figure~\ref{fig:sun_image}. In the final experiment, the RL agents perceive a bitmap of the sky with simulated cloud coverage shown in Figure~\ref{fig:sun_image_clouds}. The reward function for all three experiments is given by Equation~\ref{eq:total_rads}, where the third experiment incorporates a small effect of cloud coverage on $R_d$. 
 
-We also test the effect of a single and double axis panel on the learning speed and performance difference between, evaluated in New York City, NY during the first five days of August 2018.
+We also test the performance difference between a single and double axis panel. For the single axis, each agent can only tile the panel along the East-West axis. We evaluate each approach in New York City, NY during the first five days of August 2018.
 
 %%\subsection{Supplementary Experiments}
 %We also conduct two supplementary experiments. The first investigates the learning speed and performance difference between a single vs. double axis controller, and the second compares the effect of different reflective indices on overall performance. For both experiments we evaluate in New York City, NY during the first five days of August 2018. We only run a subset of the algorithms on each of these experiments to best illustrate the effects of the variable of interest (number of axes, magnitude of $\rho$). For the reflective index experiment, we test with $\rho \in \{0.1,0.5,0.9\}$.
@@ -420,7 +429,7 @@ Figure~\ref{fig:results_axis} shows results for experiments comparing the {\it a
 \section{Conclusion}
 
 
-We have here demonstrated the benefits of using Reinforcement Learning to improve the performance of solar panels. We develop a high fidelity test bed for the problem of solar energy harvesting, capable of simulating solar irradiance models anywhere on Earth with a variety of generated image percepts to approximate real world conditions. We take the end-to-end simulation, and the evaluation of RL on solar panel control to each be of independent interest to the broader AI and computational sustainability communities.
+We have here demonstrated the benefits of using Reinforcement Learning to improve the performance of solar panels. We develop a high fidelity test bed for the problem of solar energy harvesting, capable of simulating solar irradiance models anywhere on earth with a variety of generated image percepts to approximate real world conditions. We take the end to end simulation, and the evaluation of RL on solar panel control to each be of independent interest to the broader AI and computational sustainability communities.
 
 In the future, the clear next step is to implement a functioning RL controller on real solar panels. Additionally, there are several novel algorithmic challenges posed by the solar panel setting. First, movement, observation, and computation all expend energy; incorporating these expenditures explicitly into the model poses both challenging planning and exploration questions. Similarly,~\citet{Hsu2015} demonstrate that simple RL approaches can optimize the problem of Maximum Power Point Tracking (MPTT) for solar panels; a system that jointly optimizes over these two criteria poses another difficult challenge. We are also interested in investigating transfer learning between our simulation and the real world, similar to the work of~\cite{Taylor2007}. Lastly, we note the similarity in the control problem presented by many solar thermal applications~\citet{kalogirou2004solar}, and plan on investigating the solar thermal control problem as well.
 
