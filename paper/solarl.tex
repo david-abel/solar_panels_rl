@@ -61,7 +61,7 @@ We evaluate the utility of various RL approaches compared to an idealized tracke
 % ----------------------
 \section{Introduction}
 % Solare Panels and Solar Tracking.
-Solar energy offer a pollution free and sustainable means of harvesting energy directly from the sun. Considerable effort has been directed toward maximizing the efficiency of end to end solar systems, including the design of photovoltaic cells~\cite{Jervase2001,li2012molecular}, engineering new photovoltaic architectures and materials~\cite{li2005high}, and solar tracking systems~\cite{camacho2012control}. Solar tracking is especially important for maximizing performance of solar panels~\cite{Eke2012,Rizk2008,King2001}. Given the proper sensors and hardware, a tracking algorithm computes the relative location of the sun in the sky throughout the day and a controller orients the panel to point at the sun. The goal is to minimize the angle of incidence between incoming solar radiant energy and the grid of photovoltaic cells, as in~\citet{Eke2012,Benghanem2011,King2001} and~\citet{kalogirou1996design}. Prior work has consistently demonstrated that panels using a tracking system increase the total energy by a substantial amount:~\citet{Eke2012} report that a dual-axis tracker yielded 71 kW/h, compared to a fixed panel's yield of 52 kW/h on the same day. Eke and Senturk also report energy harvesting gains of dual-axis tracking systems over fixed systems varying from 15\% to 40\%, depending on the time of year.~\citet{mousazadeh2009review} report that gains from tracking can vary between 0\% and 100\%, while~\citet{clifford2004design} report a gain of $23\%$ due to tracking in simulation. Clearly, solar tracking and control can dramatically benefit solar photovoltaic systems.
+Solar energy offers a pollution free and sustainable means of harvesting energy directly from the sun. Considerable effort has been directed toward maximizing the efficiency of end to end solar systems, including the design of photovoltaic cells~\cite{Jervase2001,li2012molecular}, engineering new photovoltaic architectures and materials~\cite{li2005high}, and solar tracking systems~\cite{camacho2012control}. Solar tracking is especially important for maximizing performance of solar panels~\cite{Eke2012,Rizk2008,King2001}. Given the proper sensors and hardware, a tracking algorithm computes the relative location of the sun in the sky throughout the day, and a controller orients the panel to point at the sun. The goal is to minimize the angle of incidence between incoming solar radiant energy and the grid of photovoltaic cells, as in~\citet{Eke2012,Benghanem2011,King2001} and~\citet{kalogirou1996design}. Prior work has consistently demonstrated that panels using a tracking system increase the total energy by a substantial amount:~\citet{Eke2012} report that a dual-axis tracker yielded 71 kW/h, compared to a fixed panel's yield of 52 kW/h on the same day. Eke and Senturk also report energy harvesting gains of dual-axis tracking systems over fixed systems varying from 15\% to 40\%, depending on the time of year.~\citet{mousazadeh2009review} report that gains from tracking can vary between 0\% and 100\%, while~\citet{clifford2004design} report a gain of $23\%$ due to tracking in simulation. Clearly, solar tracking and control can dramatically benefit solar photovoltaic systems.
 
 % Diagram with labels
 \begin{figure}[t]
@@ -84,7 +84,7 @@ As an additional consideration, tracking algorithms take as input a variety of d
 % RL for solar tracking.
 In this work, we advocate for the use of the computational paradigm of Reinforcement Learning (RL) to optimize solar panel performance. Using RL, a learned solar panel controller can account for weather change, cloud coverage, and diverse reflective indices of surroundings, offering an efficient yet adaptive solution that can optimize for the given availability of each type of solar irradiance without the need for complex hardware. Our primary contribution is twofold:
 \begin{enumerate}
-\item The advancement of a highly relevant problem as an application area for RL, with a high fidelity simulation built using recent models of solar irradiance.
+\item The advancement of a highly relevant problem as an application area for RL, including a high fidelity simulation built using recent models of solar irradiance.
 \item The validation of the utility of RL approaches for solar panel control.
 \end{enumerate}
 
@@ -93,7 +93,7 @@ In this work, we advocate for the use of the computational paradigm of Reinforce
 % ----------------------
 \section{Background}
 
-First, some background on solar tracking and RL.
+We begin with some background on solar tracking and RL.
 
 % Solar Tracking Background
 \subsection{Solar Tracking}
@@ -105,7 +105,7 @@ R_t = R_d \theta_d + R_f \theta_f + R_r \theta_r
 Additionally, the components $R_d$ and $R_f$ are known to be effected by cloud coverage~\cite{li2004overcast,pfister2003cloud,tzoumanikas2016effect}. We attend to these details in describing our simulation in Section~\ref{sec:simulation}.
 
 % Controller for solar panel.
-A controller for a solar panel then seeks to maximize total irradiance, $R_t$, hitting the panel's surface. In the case of solar trackers, a running assumption is that optimal behavior is generally to point the panel such that its normal vector is pointing at the sun, thus the desire for accurate solar tracking algorithms. There are many types of tracking and control methods, only a few of which we discuss in this work; for an in depth survey of solar tracking techniques, see~\citet{mousazadeh2009review}.
+A controller for a solar panel then seeks to maximize total irradiance, $R_t$, hitting the panel's surface. In the case of solar trackers, a running assumption is that optimal behavior is generally to point the panel such that its normal vector is pointing at the sun, and thus arises the necessity for accurate solar tracking algorithms. There are many types of tracking and control methods, only a few of which we discuss in this work; for an in depth survey of solar tracking techniques, see~\citet{mousazadeh2009review}.
 
 % --- Table of Quantities ---
 {\renewcommand{\arraystretch}{1.2}%
@@ -162,7 +162,7 @@ For further background on RL, see~\citet{sutton1998reinforcement} or~\citet{kael
 % Agents
 \subsubsection{Agents}
 
-We evaluate two relatively simple agents: $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel and $SARSA$ with a linear function approximator. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chose each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We chose note to experiment with any Deep RL agents, as these typically require more computation power (and often GPUs), which will may be unavailable limited in the real solar panel setting. However, this could be an area of further exploration.
+We evaluate two relatively simple agents: $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel, and $SARSA$ with a linear function approximator. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chose each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We chose note to experiment with any Deep RL agents, as these typically require more computation power (and often GPUs), which will may be unavailable or limited in the real solar panel setting. However, this could be an area of further exploration.
 
 $Q$-Learning, introduced by~\citet{watkins1992q}, updates the $Q$ function via one step look aheads each experience, $\langle s, a, r, s' \rangle$, according to the gradient update rule:
 \begin{equation}
@@ -327,7 +327,7 @@ Naturally, the dimensions of the image can be controlled. For both image percept
 \end{figure*}
 
 
-Cloud cover is generated as Gaussian blobs in the synthesized images, which we then use to modify the direct irradiance that reaches the panel's surface, approximating cloudy weather conditions. The cloudy conditions are randomized each morning at 4am, with the clouds moving across the sky throughout the course of the day. Surprisingly, studies demonstrate that diffuse irradiance can be magnified by cloud cover~\cite{robinson1966solar}, but cloud cover can also decrease diffuse irradiance depending on conditions~\cite{pfister2003cloud}. Direct irradiance $(R_d)$, however, is almost always decreased by cloud cover. Thus, if a cloud sits between the panel and the sun, we reduce the direct irradiance hitting the panel's surface by a factor proportional to the clouds intensity but choose not to impact the diffuse irradiance. Each cloud is modeled as a Multivariate gaussian, with $\mu$ and $\Sigma$ randomized on creation of the cloud, and the intensity of the cloud corresponds to the value of the Gaussian. In most experiments involving cloud cover, the clouds reduce the direct irradiance by anywhere from $10\%$ to $90\%$.
+Cloud cover is generated as Gaussian blobs in the synthesized images, which we then use to modify the direct irradiance that reaches the panel's surface, approximating cloudy weather conditions. The cloudy conditions are randomized each morning at 4am, with the clouds moving across the sky throughout the course of the day. Surprisingly, studies demonstrate that diffuse irradiance can be magnified by cloud cover~\cite{robinson1966solar}, but cloud cover can also decrease diffuse irradiance depending on conditions~\cite{pfister2003cloud}. Direct irradiance $(R_d)$, however, is almost always decreased by cloud cover. Thus, if a cloud sits between the panel and the sun, we reduce the direct irradiance hitting the panel's surface by a factor proportional to the clouds intensity but choose not to impact the diffuse irradiance. Each cloud is modeled as a Multivariate Gaussian, with $\mu$ and $\Sigma$ randomized on creation of the cloud, and the intensity of the cloud corresponds to the value of the Gaussian. In most experiments involving cloud cover, the clouds reduce the direct irradiance by anywhere from $10\%$ to $90\%$.
 
 
 
