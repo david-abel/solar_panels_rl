@@ -78,6 +78,9 @@ class SolarOOMDP(OOMDP):
     def get_panel_step(self):
         return self.panel_step
 
+    def get_reflective_index(self):
+        return self.reflective_index
+
     def get_single_axis_actions(self):
         return ["do_nothing", "panel_forward_ew", "panel_back_ew"]
 
@@ -97,7 +100,7 @@ class SolarOOMDP(OOMDP):
         clouds = []
 
         # Generate info for each cloud.
-        dx, dy = random.randint(-1,1), random.randint(-1,1)
+        dx, dy = 1, 0 #random.randint(-1,1), random.randint(-1,1)
         for i in xrange(num_clouds):
             x = random.randint(0, self.img_dims)
             y = random.randint(0, self.img_dims)
@@ -177,7 +180,7 @@ class SolarOOMDP(OOMDP):
     def _compute_optimal_reward(self, sun_altitude_deg, sun_azimuth_deg):
         optimal_panel_ew = 0
         optimal_panel_ns = 0
-        optimal_reward = -.1
+        optimal_reward = 0#-.1
 
         # Iterate over all possible panel angles.
         for panel_ew_deg in xrange(-90, 90, 3):
@@ -190,7 +193,7 @@ class SolarOOMDP(OOMDP):
                     optimal_panel_ew = panel_ew_deg
                     optimal_reward = reward
 
-        return optimal_reward - .1 #.1 is penalty for moving.
+        return optimal_reward #- .1 #.1 is penalty for moving.
 
     def _transition_func(self, state, action):
         '''
@@ -206,8 +209,9 @@ class SolarOOMDP(OOMDP):
         state_angle_ns = state.get_panel_angle_ns()
         state_angle_ew = state.get_panel_angle_ew()
 
+
         # Remake or move clouds.
-        if self.time.hour == 4:
+        if (self.time.hour == 4 or self.time.hour == 12 or self.time.hour == 20) and self.time.minute == 0:
             self.clouds = self._generate_clouds() if self.cloud_mode else []
         elif self.clouds != []:
             self._move_clouds()
@@ -350,7 +354,7 @@ class SolarOOMDP(OOMDP):
             percept = "cloud_img"
         elif self.image_mode:
             percept = "img"
-        return "solarmdp_" + "p-" + str(self.panel_step) + "_" + percept #+ "_" + str(self.reflective_index)
+        return "solarmdp_" + "p-" + str(self.panel_step) + "_" + percept# + "_" + str(self.reflective_index)
 
     def _error_check(self, state, action):
         '''
