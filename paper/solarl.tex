@@ -367,22 +367,14 @@ All of our code for running experiments and for reproducing results is publicly 
 %	\subfloat[True Sun Angles]{\includegraphics[scale=0.26]{figures/reykjavik/true_avg}} \hspace{1mm} % True sun angles percept.
 %	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.26]{figures/reykjavik/img_avg}} \hspace{1mm} % Sun image percept.
 %	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.26]{figures/reykjavik/cloud_avg}} % Sun image w/ clouds percept.
-\caption{Cumulative irradiance falling on the panel's surface given different percepts over four days of learning in Reykjavik, Iceland in March of 2018.}
+\caption{Cumulative irradiance falling on the panel's surface given different percepts over eight days of learning in Reykjavik, Iceland in July of 2020.}
 \label{fig:results_ice}
 \end{center}
 \end{figure*}
 
-As can be seen in both figure (a) and figure (b), most of the RL approaches outperform the Grena tracker after a relatively short training period (1-2 days in most cases). When using images as the percept, the linUCB algorithm is by far the most efficient, while the other RL approaches still achieve similar irradiation to the Grena tracker. Given the true sun angles, however,  all RL approaches perform similarly. This discrepancy may be due to the state size difference when using images as opposed to true sun angles, which the linUCB algorithm is less susceptible to.
-
-% ------------------
-% --- Results ---
-% ------------------
-\subsection{Results}
-
-
 We first note that the \texttt{grena-tracker} consistently outperforms the \texttt{fixed-panel} by around $25\%$, corroborating the evidence advanced by previous literature~\cite{Eke2012,mousazadeh2009review,clifford2004design}. We take this alignment as further support of the accuracy of our simulation.
 
-In Figure~\ref{fig:results_aus} illustrates the cumulative irradiance exposed to each panel in the Australia experiments for each percept type. With the simple percept, {\it all} of the learning algorithms outperform the baseline tracker and fixed panel by a substantial amount. When just the image is provided, \texttt{lin-ucb} achieves by far the best performance; we hypothesize that this is due to the non-sequential nature of this variant of the task. When just the sun is present, there is little incentive to forecast expected future reward beyond the immediate next step. Conversely, we see that when clouds are present, \texttt{lin-ucb} substantially underperforms, and is dominated by the other learners.
+In Figure~\ref{fig:results_aus} illustrates the cumulative irradiance exposed to each panel in the Australia experiments for each percept type. With the simple percept of the true sun angles, {\it all} of the learning algorithms outperform the baseline tracker and fixed panel by a substantial amount. When just the image is provided, \texttt{lin-ucb} achieves by far the best performance; we hypothesize that this is due to the non-sequential nature of this variant of the task. When just the sun is present, there is little incentive to forecast expected future reward beyond the immediate next step. Conversely, we see that when clouds are present, \texttt{lin-ucb} substantially underperforms, and is dominated by the other learners.
 
 Figure~\ref{fig:results_ice} shows the same experiments simulated in Iceland. The results are largely the same, though we note that the \texttt{grena-tracker} does substantially better in Iceland.
 
