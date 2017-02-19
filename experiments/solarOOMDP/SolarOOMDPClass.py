@@ -183,8 +183,8 @@ class SolarOOMDP(OOMDP):
         optimal_reward = -.1
 
         # Iterate over all possible panel angles.
-        for panel_ew_deg in xrange(-90, 90, 3):
-            for panel_ns_deg in xrange(-90, 90, 3):
+        for panel_ew_deg in xrange(-90, 90, 5):
+            for panel_ns_deg in xrange(-90, 90, 5):
 
                 # Check reward.
                 reward = self._compute_reward(sun_altitude_deg, sun_azimuth_deg, panel_ew_deg, panel_ns_deg)
@@ -211,7 +211,7 @@ class SolarOOMDP(OOMDP):
 
 
         # Remake or move clouds.
-        if (self.time.hour == 4 or self.time.hour == 12 or self.time.hour == 20) and self.time.minute == 0:
+        if (self.time.hour == 1) and self.time.minute == 0:
             self.clouds = self._generate_clouds() if self.cloud_mode else []
         elif self.clouds != []:
             self._move_clouds()

@@ -5,7 +5,7 @@ import numpy as np
 # Misc. imports.
 from pysolar import solar, radiation
 
-CLOUD_DIFFUS_FACTOR = 0.1 # 10% of light is blocked
+CLOUD_DIFFUS_FACTOR = 1.0 #0.85 # 10% of light is blocked
 
 def _compute_sun_altitude(latitude_deg, longitude_deg, time):
     return solar.GetAltitude(latitude_deg, longitude_deg, time)
