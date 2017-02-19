@@ -180,7 +180,7 @@ class SolarOOMDP(OOMDP):
     def _compute_optimal_reward(self, sun_altitude_deg, sun_azimuth_deg):
         optimal_panel_ew = 0
         optimal_panel_ns = 0
-        optimal_reward = 0#-.1
+        optimal_reward = -.1
 
         # Iterate over all possible panel angles.
         for panel_ew_deg in xrange(-90, 90, 3):
@@ -193,7 +193,7 @@ class SolarOOMDP(OOMDP):
                     optimal_panel_ew = panel_ew_deg
                     optimal_reward = reward
 
-        return optimal_reward #- .1 #.1 is penalty for moving.
+        return optimal_reward
 
     def _transition_func(self, state, action):
         '''

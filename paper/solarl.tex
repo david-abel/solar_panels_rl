@@ -73,7 +73,7 @@ Solar energy offer a pollution free and sustainable means of harvesting energy d
 \end{figure}
 
 % Previous algorithms
-Developments in solar tracking have led to algorithms that are sufficiently accurate to inform control of panels, building on the early work of~\citet{spencer1971fourier,walraven1978calculating} and~\citet{michalsky1988astronomical}. Recently,~\citet{reda2004solar} developed an algorithm that computes the sun's location in the sky within $\pm 0.0003\degree$ of accuracy, achieving the highest degree of accuracy of any known algorithm, but is computationally inefficient to the point of impracticality.~\citet{Grena2008} overcomes these inefficiencies with a tracking algorithm that requires an order of magnitude fewer calculations than the approach of Reda and Andreas, while achieving $0.0027\degree$ of accuracy.
+Developments in solar tracking have led to algorithms that are sufficiently accurate to inform control of panels, building on the early work of~\citet{spencer1971fourier,walraven1978calculating} and~\citet{michalsky1988astronomical}. Recently,~\citet{reda2004solar} developed an algorithm that computes the sun's location in the sky within $\pm 0.0003\degree$ of accuracy, achieving the highest degree of accuracy of any known algorithm, but is computationally inefficient to the point of impracticality.~\citet{Grena2008} overcomes these inefficiencies with a tracking algorithm that requires an order of magnitude fewer calculations than the approach of Reda and Andreas, while still achieving $0.0027\degree$ of accuracy.
 
 % Limitations
 However, prior literature suggests that a variety of factors contribute to the performance of a panel~\cite{King2001}, and so pointing a panel directly at the sun is not always optimal behavior. Specifically, the total solar irradiance falling on a panel is a combination of {\it direct}, {\it reflective}, and {\it diffuse} irradiance~\cite{Benghanem2011}. The diffuse irradiance typically varies between $15\%$ and $55\%$ of direct irradiance depending on factors like cloud coverage and the time of day~\cite{peterson1981ratio}, while a case study by the Cold Climate Housing Research Center in Fairbanks, Alaska reports reflective irradiance varying from $5\%$ to $25\%$ of direct irradiance~\cite{colgan2010}. The reflective irradiance varies heavily based on the percentage of irradiance reflected off the surrounding ground surface: typical values for this percentage given by~\citet{mcevoy2003practical} vary between $17\%$ (soil), $25\%$ (grass), and $55\%$ (concrete). Additionally, changing weather and atmospheric conditions can affect the optimal panel orientation~\cite{Kelly2009}. Thus, optimal performance may involve prioritizing reflective or diffuse irradiance when direct sunlight is not available.
@@ -162,7 +162,7 @@ For further background on RL, see~\citet{sutton1998reinforcement} or~\citet{kael
 % Agents
 \subsubsection{Agents}
 
-We evaluate two relatively simple agents: $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel and $SARSA$ with a linear function approximator. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chose each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We did not use any agents that employ Deep Learning techniques, as this would require more computation power and storage, both of which will be limited in the solar panel real setting. 
+We evaluate two relatively simple agents: $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel and $SARSA$ with a linear function approximator. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chose each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We did not use any agents that employ Deep Learning techniques, as these require more computation power and storage, both of which will be limited in the real solar panel setting. However, this could be an area of further exploration.
 
 $Q$-Learning, introduced by~\citet{watkins1992q}, updates the $Q$ function via one step look aheads each experience, $\langle s, a, r, s' \rangle$, according to the gradient update rule:
 \begin{equation}
@@ -313,21 +313,6 @@ Naturally, the dimensions of the image can be controlled. For both image percept
 Cloud cover is created by generating small Gaussian blobs in the synthesized images, which we then use to modify the direct irradiance that reaches the panel's surface, approximating cloudy weather conditions. The cloudy conditions are randomized each morning at 4am, with the clouds moving across the sky throughout the course of the day. Surprisingly, studies demonstrate that diffuse irradiance can be magnified by cloud cover~\cite{robinson1966solar}, but cloud cover can also decrease diffuse irradiance depending on conditions~\cite{pfister2003cloud}. Direct irradiance $(R_d)$, however, is almost always decreased by cloud cover. Thus, if a cloud sits between the panel and the sun, we reduce the direct irradiance hitting the panel's surface by a factor proportional to the clouds intensity but choose not to impact the diffuse irradiance. Each cloud is modeled as a Multivariate gaussian, with $\mu$ and $\Sigma$ randomized on creation of the cloud, and the intensity of the cloud corresponds to the value of the Gaussian. In most experiments involving cloud cover, the clouds reduce the direct irradiance by anywhere from $10\%$ to $90\%$.
 
 
-
-% Results (Mildura)
-\begin{figure*}
-\begin{center}
-	\subfloat[True Sun Angles]{\includegraphics[scale=0.26]{figures/mildura/true_cumulative}} \hspace{1mm}% True sun angles percept.
-	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.26]{figures/mildura/img_cumulative}} \hspace{1mm} % Sun image percept.
-%	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.26]{figures/mildura/cloud_cumulative}} \\ % Sun image w/ clouds percept.
-%	\subfloat[True Sun Angles]{\includegraphics[scale=0.26]{figures/mildura/true_avg}} \hspace{1mm} % True sun angles percept.
-%	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.26]{figures/mildura/img_avg}} \hspace{1mm} % Sun image percept.
-%	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.26]{figures/mildura/cloud_avg}} % Sun image w/ clouds percept.
-\caption{Cumulative irradiance falling on the panel's surface given different percepts over six days of learning in Mildura, Australia in July of 2015.}
-\label{fig:results_aus}
-\end{center}
-\end{figure*}
-
 % ----------------------
 % -- Experiments --
 % ----------------------
@@ -351,10 +336,26 @@ We conduct two batches of experiments, the first in Mildora Australia for four d
 \subsection{Supplementary Experiments}
 We also conduct two supplementary experiments. The first investigates the learning speed and performance difference between a single vs. double axis controller, and the second compares the effect of different reflective indices on overall performance. For both experiments we evaluate in New York City, NY during the first five days of August 2018. We only run a subset of the algorithms on each of these experiments to best illustrate the effects of the variable of interest (number of axes, magnitude of $\rho$). For the reflective index experiment, we test with $\rho \in \{0.1,0.5,0.9\}$.
 
+
 All of our code for running experiments and for reproducing results is publicly available.\footnote{{\it Link redacted during review.}} %\url{https://github.com/david-abel/solar_panels_rl/experiments}}.
 
-
-
+% ------------------
+% --- Results ---
+% ------------------
+\subsection{Results}
+% Results (Mildura)
+\begin{figure*}[t]
+\begin{center}
+	\subfloat[True Sun Angles]{\includegraphics[scale=0.26]{figures/mildura/true_cumulative}} \hspace{1mm}% True sun angles percept.
+	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.26]{figures/mildura/img_cumulative}} \hspace{1mm} % Sun image percept.
+%	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.26]{figures/mildura/cloud_cumulative}} \\ % Sun image w/ clouds percept.
+%	\subfloat[True Sun Angles]{\includegraphics[scale=0.26]{figures/mildura/true_avg}} \hspace{1mm} % True sun angles percept.
+%	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.26]{figures/mildura/img_avg}} \hspace{1mm} % Sun image percept.
+%	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.26]{figures/mildura/cloud_avg}} % Sun image w/ clouds percept.
+\caption{Cumulative irradiance falling on the panel's surface given different percepts over four days of learning in Mildura, Australia in July of 2015.}
+\label{fig:results_aus}
+\end{center}
+\end{figure*}
 
 
 % Results (reykjavik)
@@ -366,11 +367,12 @@ All of our code for running experiments and for reproducing results is publicly 
 %	\subfloat[True Sun Angles]{\includegraphics[scale=0.26]{figures/reykjavik/true_avg}} \hspace{1mm} % True sun angles percept.
 %	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.26]{figures/reykjavik/img_avg}} \hspace{1mm} % Sun image percept.
 %	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.26]{figures/reykjavik/cloud_avg}} % Sun image w/ clouds percept.
-\caption{Cumulative irradiance falling on the panel's surface given different percepts over six days of learning in Reykjavik, Iceland in March of 2018.}
+\caption{Cumulative irradiance falling on the panel's surface given different percepts over four days of learning in Reykjavik, Iceland in March of 2018.}
 \label{fig:results_ice}
 \end{center}
 \end{figure*}
 
+As can be seen in both figure (a) and figure (b), most of the RL approaches outperform the Grena tracker after a relatively short training period (1-2 days in most cases). When using images as the percept, the linUCB algorithm is by far the most efficient, while the other RL approaches still achieve similar irradiation to the Grena tracker. Given the true sun angles, however,  all RL approaches perform similarly. This discrepancy may be due to the state size difference when using images as opposed to true sun angles, which the linUCB algorithm is less susceptible to.
 
 % ------------------
 % --- Results ---
@@ -399,14 +401,16 @@ Figure~\ref{fig:results_ice} shows the same experiments simulated in Iceland. Th
 \end{figure}
 
 
+
+
 % Results (rho tests)
-%\begin{figure*}
-%\begin{center}
-%\includegraphics[scale=0.26]{figures/saxis_vs_daxis}
-%\caption{Effect of ground reflective index on energy acquired.}
-%\label{fig:results_rho}
-%\end{center}
-%\end{figure*}
+\begin{figure*}
+\begin{center}
+\includegraphics[scale=0.26]{figures/rho_cumulative}
+\caption{Effect of ground reflective index on energy acquired.}
+\label{fig:results_rho}
+\end{center}
+\end{figure*}
 
 
 
@@ -418,7 +422,7 @@ Figure~\ref{fig:results_ice} shows the same experiments simulated in Iceland. Th
 
 We have here demonstrated the benefits of using the approach of Reinforcement Learning to improve the performance of solar panels. We develop a high fidelity test bed for the problem of solar energy harvesting, capable of simulating solar irradiance models anywhere on Earth with a variety of generated image percepts to approximate real world conditions. We take the simulation, and the evaluation of simple RL approaches on solar panel control to each be of independent interest to the broader AI and computational sustainability communities.
 
-In the future, the clear next step is to implement a functioning RL controller on real solar panels. Additionally, there are several novel algorithmic challenges posed by the solar panel setting. First, both movement and observation expend energy; incorporating these expenditures explicitly into the model poses both challenging planning and exploration questions. Similarly,~\citet{Hsu2015} demonstrate that simple RL approaches can optimize the problem of Maximum Power Point Tracking (MPTT) for solar panels; a system that jointly optimizes over these two criteria poses another difficult challenge. We are also interested in investigating transfer learning between our simulation and the real world, similar to the setup of~\cite{Taylor2007}. 
+In the future, the clear next step is to implement a functioning RL controller on real solar panels. Additionally, there are several novel algorithmic challenges posed by the solar panel setting. First, movement, observation, and computation all expend energy; incorporating these expenditures explicitly into the model poses both challenging planning and exploration questions. Similarly,~\citet{Hsu2015} demonstrate that simple RL approaches can optimize the problem of Maximum Power Point Tracking (MPTT) for solar panels; a system that jointly optimizes over these two criteria poses another difficult challenge. We are also interested in investigating transfer learning between our simulation and the real world, similar to the setup of~\cite{Taylor2007}. 
 
 
 
