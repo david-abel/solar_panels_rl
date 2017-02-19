@@ -84,7 +84,7 @@ As an additional consideration, tracking algorithms take as input a variety of d
 % RL for solar tracking.
 In this work, we advocate for the use of the computational paradigm of Reinforcement Learning (RL) to optimize solar panel performance. Using RL, a learned solar panel controller can account for weather change, cloud coverage, and diverse reflective indices of surroundings, offering an efficient yet adaptive solution that can optimize for the given availability of each type of solar irradiance without the need for complex hardware. Our primary contribution is twofold:
 \begin{enumerate}
-\item The advancement of a highly relevant problem as an application area for RL, along with a high fidelity simulation for evaluation built using recent models of solar irradiance.
+\item The advancement of a highly relevant problem as an application area for RL, with a high fidelity simulation built using recent models of solar irradiance.
 \item The validation of the utility of RL approaches for solar panel control.
 \end{enumerate}
 
@@ -161,19 +161,20 @@ For further background on RL, see~\citet{sutton1998reinforcement} or~\citet{kael
 
 % Agents
 \subsubsection{Agents}
-We evaluate two relatively simple agents: $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel and $SARSA$ with a linear function approximator. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chosen each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We did not use any agents that employ Deep Learning, as training Deep RL agents typically requires more computational power or even GPUs, which may be unavailable in the real solar panel setting. 
+
+We evaluate two relatively simple agents: $Q$-Learning with a Linear Function approximator with a Gaussian radial basis kernel and $SARSA$ with a linear function approximator. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with LinUCB~\cite{li2010contextual}, a standard approach to Contextual Bandits. We chose each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We did not use any agents that employ Deep Learning techniques, as this would require more computation power and storage, both of which will be limited in the solar panel real setting. 
 
 $Q$-Learning, introduced by~\citet{watkins1992q}, updates the $Q$ function via one step look aheads each experience, $\langle s, a, r, s' \rangle$, according to the gradient update rule:
 \begin{equation}
 Q(s,a) = (1-\eta) Q(s,a) + \eta(r + \gamma \max_{a'} Q(s', a'))
 \end{equation}
-Where $\eta \in [0,1]$ is a learning rate. The linear approximation scales tabular $Q$ learning to domains where states or observables are described by a high dimensional feature vector, $s = [s_1, s_2, \ldots, s_k]$. The $Q$ function is parameterized by the matrix $\theta$, where each column corresponds to an action's parameters, and each row is a state variable. and computes the $Q$ value as:
+Where $\eta \in [0,1]$ is a learning rate. The linear approximation scales tabular $Q$ learning to domains where states or observables are described by a high dimensional feature vector, $\bm{s} = [s_1, s_2, \ldots, s_k]$. The $Q$ function is parameterized by the $k \times |\mc{A}|$ matrix $w$, where each column corresponds to an action's parameters for each state variable. $Q^*$ is then approximated as:
 \begin{equation}
-Q_\theta(s,a) = \sum_{i=1}^k \theta_{i,a} s_i
+\hat{Q}_w(\bm{s},a) = \sum_{i=1}^k w_a s_i
 \end{equation}
 The parameters are updated via the gradient update rule, again given a single experience $\langle s, a, r, s' \rangle$:
 \begin{equation}
-\theta_{i,a} = \theta_{i,a} + \eta \left( r + \gamma \max_{a'} Q_\theta(s',a') - Q_\theta(s,a)\right)
+w_a = w_a + \eta \left( r + \gamma \max_{a'} Q_\theta(s',a') - Q_w(s,a)\right)
 \end{equation}
 
 To introduce some non-linearity, we apply a Gaussian radial basis kernel to each feature. That is, let:
@@ -187,7 +188,7 @@ The agent receives states passed through this kernel:
 
 We also test with SARSA~\cite{rummery1994line}, again with a linear function approximator. The only difference from the $Q$-Learner is the update rule which makes SARSA an on policy learner. The algorithm updates using the chosen next action $a'$, instead of the max:
 \begin{equation}
-\theta_{i,a} = \theta_{i,a} + \alpha \left( r + \gamma Q_\theta(s',a') - Q_\theta(s,a)\right)
+w_a = w_a + \alpha \left( r + \gamma Q_w(s',a') - Q_w(s,a)\right)
 \end{equation}
 For further details about these algorithms, see~\citet{geramifard2013tutorial}.
 
@@ -361,7 +362,7 @@ All of our code for running experiments and for reproducing results is publicly 
 \begin{center}
 	\subfloat[True Sun Angles]{\includegraphics[scale=0.26]{figures/reykjavik/true_cumulative}} \hspace{1mm} % True sun angles percept.
 	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.26]{figures/reykjavik/img_cumulative}} \hspace{1mm} % Sun image percept.
-	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.26]{figures/reykjavik/cloud_cumulative}} \\ % Sun image w/ clouds percept.
+%	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.26]{figures/reykjavik/cloud_cumulative}} \\ % Sun image w/ clouds percept.
 %	\subfloat[True Sun Angles]{\includegraphics[scale=0.26]{figures/reykjavik/true_avg}} \hspace{1mm} % True sun angles percept.
 %	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.26]{figures/reykjavik/img_avg}} \hspace{1mm} % Sun image percept.
 %	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.26]{figures/reykjavik/cloud_avg}} % Sun image w/ clouds percept.
