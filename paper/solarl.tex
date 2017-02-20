@@ -113,7 +113,7 @@ R_t = R_d \theta_d + R_f \theta_f + R_r \theta_r
 Additionally, the components $R_d$ and $R_f$ are known to be effected by cloud coverage~\cite{li2004overcast,pfister2003cloud,tzoumanikas2016effect}. We attend to these details in describing our simulation in Section~\ref{sec:simulation}.
 
 % Controller for solar panel.
-A controller for a solar panel then seeks to maximize total irradiance, $R_t$, hitting the panel's surface. In the case of solar trackers, a running assumption is that optimal behavior is generally to point the panel such that its normal vector is pointing at the sun, and thus arises the necessity for accurate solar tracking algorithms. There are many types of tracking methods, only a few of which we discuss in this work; for an in depth survey of solar tracking techniques, see~\citet{mousazadeh2009review}.
+A controller for a solar panel then seeks to maximize total irradiance, $R_t$, hitting the panel's surface. In the case of solar trackers, a running assumption is that it is near optimal to orient the panel such that its normal vector is pointing at the sun, and thus arises the necessity for accurate solar tracking algorithms. There are many types of tracking methods, only a few of which we discuss in this work; for an in depth survey of solar tracking techniques, see~\citet{mousazadeh2009review}.
 
 % --- Table of Quantities ---
 {\renewcommand{\arraystretch}{1.2}%
@@ -155,7 +155,7 @@ The solution to an MDP is called a {\it policy}, denoted $\pi : \mc{S} \longmaps
 V^*(s) = \max_a \left(\mc{R}(s,a) + \gamma \sum_{s'} \mc{T}(s' \mid s, a) V^*(s') \right).
 \end{equation}
 
-Also of interest is the {\it action-value function}, $Q^*: \mc{S} \times \mc{A} \longmapsto [0,\textsc{RMax}/(1-\gamma)]$, which specifies the long term expected reward of executing an action in a state and behaving optimally thereafter:
+Also of interest is the {\it action-value function}, $Q^*: \mc{S} \times \mc{A} \longmapsto \left[0,\frac{\textsc{RMax}}{1-\gamma}\right]]$, which specifies the long term expected reward of executing an action in a state and behaving optimally thereafter:
 \begin{equation}
 Q^*(s,a) = \mc{R}(s,a) + \gamma \sum_{s'} \mc{T}(s' \mid s,a) V^*(s').
 \end{equation}
@@ -168,13 +168,13 @@ For further background on RL, see~\citet{sutton1998reinforcement} or~\citet{kael
 % Agents
 \subsubsection{Agents}
 
-We experiment with two relatively simple learning agents: $Q$-Learning and SARSA, each with a linear function approximator to estimate $Q^*$. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with $Q$-Learning with $\gamma=0$ (so it only maximizes immediate return) and LinUCB~\cite{li2010contextual}, a standard approach to non-sequential Contextual Bandits. We chose each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We chose not to experiment with any Deep RL agents~\cite{mnih2015human}, as Deep RL typically requires more computational power (and often GPUs), which may be unavailable or limited in the real solar panel setting. However, this could be an area of further exploration when we move out of simulation.
+We experiment with two relatively simple learning agents: $Q$-Learning and SARSA, each with a linear function approximator to estimate $Q^*$. To test the significance of modeling the sequential aspects of the problem, we also conduct experiments with $Q$-Learning with $\gamma=0$ (so it only maximizes immediate return) and LinUCB~\cite{li2010contextual}, a standard approach to non-sequential Contextual Bandits. We chose each of the linear approximators to illustrate that online, efficient, and lightweight algorithms can be effective in the domain. We chose not to experiment with any Deep RL agents~\cite{mnih2015human}, as Deep RL typically requires more computational power (and often GPUs), which may be unavailable or limited in the real solar panel setting. However, this could be an area of further exploration.
 
 $Q$-Learning, introduced by~\citet{watkins1992q}, maintains an estimate of $Q^*$ via updates after each experience $\langle s, a, r, s' \rangle$, updating according to the rule:
 \begin{equation}
 \hat{Q}(s,a) = (1-\eta) \hat{Q}(s,a) + \eta(r + \gamma \max_{a'} \hat{Q}(s', a')),
 \end{equation}
-where $\eta \in [0,1]$ is a learning rate. The linear approximator extends tabular $Q$-Learning to domains where states are described by feature vectors, $\bm{s} = [s_1, s_2, \ldots, s_k]$. Here, $\hat{Q}$ is parameterized by a set of $k$-vectors $w^a$, where each vector corresponds to action $a$'s parameters across the state variables, resulting in:
+where $\eta \in [0,1]$ is a learning rate. The linear approximator extends tabular $Q$-Learning to domains where states are described by feature vectors, $\bm{s} = \begin{bmatrix} s_1& s_2& \ldots& s_k\end{bmatrix}$. Here, $\hat{Q}$ is parameterized by a set of $k$-vectors $w^a$, where each vector corresponds to action $a$'s parameters across the state variables, resulting in:
 \begin{equation}
 \hat{Q}_w(\bm{s},a) = \sum_{i=1}^k w^a_i s_i.
 \end{equation}
@@ -329,13 +329,13 @@ The diffuse irradiance incident angle $\theta_f$ is given by a simple approximat
 %\end{center}
 %\end{figure*}
 
-The final step in the simulation is to generate percepts (state variables) for the learning algorithms.\footnote{The tracking algorithm always receives the same information: the year, month, day, hour, longitude, and latitude. We ignore refractive effects on irradiance due to atmospheric temperature and pressure.} Our most immediate plan for future work is to build a physical system to conduct experiments with RL outside of simulation. In the real setting, we plan on equipping each solar panel with a fish eye monocular camera to provide images of the sky as input for the RL algorithm. To approximate the real setting, our simulated environment supports percepts of three kinds:
+The final step in the simulation is to generate percepts (state variables) for the learning algorithms.\footnote{The tracking algorithm always receives the same information: the year, month, day, hour, longitude, and latitude.} Our most immediate plan for future work is to build a physical system to conduct experiments with RL outside of simulation. In the real setting, we plan on equipping each solar panel with a fish eye monocular camera to provide images of the sky as input for the RL algorithm. To approximate the real setting, our simulated environment supports percepts of three kinds:
 \begin{enumerate}
 \item The panel's orientation and two angles representing the sun's true position in the sky, relative to the panel (four state variables).
 \item A $16 \times 16$ synthesized grayscale image of the clear sky ($256$ state variables, each in the range $[0,1]$).
 \item A $16\times 16$ synthesized grayscale image of the sky with simulated cloud cover ($256$ state variables, each in the range $[0,1]$).
 \end{enumerate}
-For both image percepts, the perceived fraction of the sky changes as the panel moves to approximate having the camera mounted to the panel.
+For both image percepts, the perceived fraction of the sky changes as the panel moves to approximate having the camera mounted to the panel. In generating images, we ignore refractive effects on irradiance due to temperature and pressure.
 
 
 
@@ -344,11 +344,11 @@ For both image percepts, the perceived fraction of the sky changes as the panel 
 Cloud cover is generated as Gaussian blobs in the synthesized images. The cloud conditions are randomized each morning at 4am, with the clouds moving from the left side of the image to the right (across the sky) throughout the course of the day (1 pixel per hour). Each day at 4am, we generate between 1 and 5 clouds uniformly at random, with each cloud is modeled as a Multivariate Gaussian. Parameters are randomized as:
 \begin{align*}
 \mu \sim& \begin{bmatrix}
-& \text{Unif}(0:N)&  \text{Unif}(0:N) &\\
+\text{Unif}(0:N)&  \text{Unif}(0:N) \\
 \end{bmatrix}, \\
 \Sigma \sim& \begin{bmatrix}
-&\text{Unif}(2:6)&0.2& \\
-&0.2&\text{Unif}(2:4)& \\
+\text{Unif}(2:6)&0.2 \\
+0.2&\text{Unif}(2:4) \\
 \end{bmatrix}.
 \end{align*}
 Where $\text{Unif}(x:y)$ denotes a uniform random sample from the natural interval $[x:y]$, and $N$ is the dimension of the image (which we set to 16). The intensity of the cloud corresponds to the value of the Gaussian. Surprisingly, studies demonstrate that diffuse irradiance can be either magnified~\cite{robinson1966solar} or decreased~\cite{pfister2003cloud} by cloud cover, depending on specific conditions. In light of these findings, our main interest in experimenting with clouds is to evaluate RL approaches on a rich state space. Direct irradiance $(R_d)$, however, is almost always decreased by cloud cover. Thus, if a cloud sits between the panel and the sun, we reduce the direct irradiance hitting the panel's surface by a factor proportional to the cloud's intensity, but choose not to alter the diffuse irradiance, since there are conflicting empirical findings on its impact~\cite{robinson1966solar,pfister2003cloud}. In most experiments involving cloud cover, the clouds reduce the direct irradiance by anywhere from $0\%$ to $40\%$ at various points throughout the day. 
@@ -415,13 +415,13 @@ All of our code for running experiments and for reproducing results is publicly 
 \end{figure}
 
 
-Figure~\ref{fig:results} illustrates the cumulative irradiance exposed to each panel in the Australia experiments (top) and the Iceland experiments (bottom). Notably, with the simple percept of the true sun angles, {\it all} of the learning algorithms outperform the baseline tracker and fixed panel in Australia, while in Iceland, \texttt{lin-ucb} performs worse than the \texttt{fixed} panel for the first two percepts. When just the image is provided, \texttt{lin-ucb} achieves by far the best performance; we hypothesize that this is due to LinUCB's informed approach to exploration compared to the $\varepsilon$-greedy used by \texttt{sarsa-lin} and both \texttt{ql-lin} and \texttt{ql-lin, $\gamma=0$}. Additionally, when just the sun is present, there is little incentive to forecast expected future reward beyond the immediate next step, which may explain the success of \texttt{lin-ucb}.
+Figure~\ref{fig:results} illustrates the cumulative irradiance exposed to each panel in the Australia experiments (top) and the Iceland experiments (bottom). Notably, with the simple percept of the true sun angles, {\it all} of the learning algorithms outperform the baseline tracker and fixed panel in Australia, while in Iceland, \texttt{lin-ucb} performs worse than the \texttt{fixed} panel for the first two percepts. When just the image is provided in Australia, \texttt{lin-ucb} achieves by far the best performance; we hypothesize that this is due to LinUCB's informed approach to exploration compared to the $\varepsilon$-greedy used by \texttt{sarsa-lin} and both \texttt{ql-lin} and \texttt{ql-lin, $\gamma=0$}. Additionally, when just the sun is in the image, there is little incentive to forecast expected future reward beyond the immediate next step, which may explain the success of \texttt{lin-ucb}. This is further corroborated by the fact that \texttt{ql-lin, $\gamma=0$} does quite well in the experiment as well.
 
- Conversely, we see that \texttt{lin-ucb} continues to struggle in Iceland. When clouds are present, \texttt{lin-ucb} performs comparably to the other learners. The cloudy image percepts pose a challenging RL problem, but still we see that the simple approaches achieve similar performance as the \texttt{grena-tracker}, and note the substantial room for improvement. In Iceland, the results are largely the same, though we note that the \texttt{grena-tracker} does better. In all cases, we note that there is room for improvement, suggesting that more sophisticated approaches may have more success on real panels than current techniques.
+ Conversely, we see that \texttt{lin-ucb} continues to struggle in Iceland. When clouds are present, \texttt{lin-ucb} performs comparably to the other learners. The cloudy image percepts pose a challenging RL problem, but still we see that the simple approaches achieve similar performance as the \texttt{grena-tracker}, and note the substantial room for improvement from further training or more complex learners. In Iceland, the results are largely the same as Australia, though we note that the \texttt{grena-tracker} does better. In all cases, we note that there is room for improvement, suggesting that more sophisticated approaches may have more success on real panels than current techniques.
 
 In all our simulations, the \texttt{grena-tracker} consistently outperforms the \texttt{fixed-panel} by around $25\%$, consistent with previously published results~\cite{Eke2012,mousazadeh2009review,clifford2004design}. %We take this alignment as further support of the accuracy of our simulation.
 
-Figure~\ref{fig:results_axis} shows results for experiments comparing the {\it advantage} of the two-axis controller vs.\ a single-axis controller. In all cases except for \texttt{lin-ucb}, the presence of another axis immediately improves performance. Clearly the added problem complexity of the larger state-action space doesn't detract from the quality of the policy that the RL agents learn.
+Figure~\ref{fig:results_axis} shows results for experiments comparing the {\it advantage} of the two-axis controller vs.\ a single-axis controller. In all cases except for \texttt{lin-ucb}, the presence of another axis immediately improves performance. Clearly the added problem complexity of the larger state-action space doesn't detract from the quality of the policy that the RL agents learn. We also observe that \texttt{lin-ucb} barely sees any performance gain from using the dual-axis controller.
 
 
 
