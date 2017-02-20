@@ -96,7 +96,7 @@ class SolarOOMDP(OOMDP):
         Returns:
             (list of Cloud)
         '''
-        num_clouds = random.randint(1,5)
+        num_clouds = random.randint(0,4)
         clouds = []
 
         # Generate info for each cloud.

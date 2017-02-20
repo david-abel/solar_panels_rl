@@ -2,7 +2,7 @@ import numpy as np
 
 class Cloud(object):
 
-    PIX_INTENSITY = .25
+    PIX_INTENSITY = .15
 
     def __init__(self, x, y, dx, dy, rx, ry, intensity=PIX_INTENSITY):
         self.x, self.y = x, y
@@ -12,8 +12,8 @@ class Cloud(object):
 
     def move(self, timestep):
         # Moves dx,dy every 20 minutes.
-        self.x += self.dx * timestep/30.0
-        self.y += self.dy * timestep/30.0
+        self.x += self.dx * timestep/60.0
+        self.y += self.dy * timestep/60.0
 
     def get_mu(self):
         return np.array([self.x, self.y])

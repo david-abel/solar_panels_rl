@@ -2,6 +2,7 @@ import simple_plot.rl_plot as rp
 import argparse
 import os
 import math
+import matplotlib
 from collections import defaultdict
 
 
@@ -53,6 +54,13 @@ def main():
     # Parse args.
     args = parse_args()
 
+
+    font = {'family' : 'sans serif',
+        # 'weight' : 'bold',
+        'size'   : 14}
+
+    matplotlib.rc('font', **font)
+
     # Grab agents.
     data_dir = args.dir
     agents = [agent.replace(".csv","") for agent in os.listdir(data_dir) if ".csv" in agent]
@@ -65,7 +73,7 @@ def main():
     pair_diffs, pair_cis = compute_pair_diffs_and_cis(agent_pairs, data_dir, cumulative=cumulative)
 
     # Create plot.
-    y_axis_label = "Avg. Double Axis Reward Advantage"
+    y_axis_label = "Average Double Axis Reward Advantage"
     title = "Double Axis vs. Single Axis w/ True Sun Angles" # Need to mention percept type.
     rp.plot(pair_diffs, data_dir, agent_pairs, conf_intervals=pair_cis, use_cost=False, cumulative=cumulative, episodic=False, title=title, y_axis_label=y_axis_label)
 
