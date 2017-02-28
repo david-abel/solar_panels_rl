@@ -8,4 +8,5 @@
 *.bbl
 *.csv
 *.txt
+*.out
 .DS_Store
