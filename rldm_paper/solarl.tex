@@ -74,7 +74,7 @@ Prior work has consistently demonstrated that panels using a tracking system inc
 \end{figure}
 
 % Previous algorithms
-Recent work in solar tracking has focused on algorithms that are sufficiently accurate to inform control of panels, building on the early work of~\citet{spencer1971fourier} and~\citet{michalsky1988astronomical}. The algorithm introduced by~\citet{reda2004solar} computes the sun's location in the sky within $\pm 0.0003\degree$ of accuracy, achieving the highest degree of accuracy of any known algorithm, but is computationally inefficient to the point of impracticality.~\citet{Grena2008} overcomes these inefficiencies with a tracking algorithm that requires an order of magnitude fewer calculations while still achieving $0.0027\degree$ of accuracy.
+Recent work in solar tracking has focused on algorithms that are sufficiently accurate to inform control of panels, building on the early work of~\citet{spencer1971fourier}. The algorithm introduced by~\citet{reda2004solar} computes the sun's location in the sky within $\pm 0.0003\degree$ of accuracy, achieving the highest degree of accuracy of any known algorithm, but is computationally inefficient to the point of impracticality.~\citet{Grena2008} overcomes these inefficiencies with a tracking algorithm that requires an order of magnitude fewer calculations while still achieving $0.0027\degree$ of accuracy.
 
 % Limitations
 However, prior literature suggests that a variety of factors contribute to the performance of a panel~\cite{King2001}, and thus, pointing directly at the sun is not always optimal behavior. Specifically, the total solar irradiance falling on a panel is a combination of {\it direct}, {\it reflective}, and {\it diffuse} irradiance~\cite{Benghanem2011}. The diffuse irradiance typically varies between $15\%$ and $55\%$ of direct irradiance depending on factors like cloud coverage and the time of day~\cite{peterson1981ratio}, while a case study by the Cold Climate Housing Research Center in Fairbanks, Alaska reports reflective irradiance varying from $5\%$ to $25\%$ of direct irradiance~\cite{colgan2010}. The reflective irradiance depends on the percentage of irradiance reflected off the surrounding ground surface: Typical values for this percentage given by~\citet{mcevoy2003practical} vary between $17\%$ (soil), $55\%$ (concrete), and $90\%$ (snow). Additionally, changing weather conditions can affect the optimal panel orientation~\cite{Kelly2009}. Thus, optimal performance may involve prioritizing reflective or diffuse irradiance when direct sunlight is unavailable.
@@ -146,7 +146,7 @@ We introduce a high fidelity simulated environment to validate the use of RL for
 
 % (Step 2) Irradiance.
 %\subsection{Computing $\pmb{R_d, R_f, R_r}$}
-{\bf (2) Computing $\pmb{R_d, R_f, R_r}$:} Given the sun's altitude $\alpha$ and azimuth $\Gamma$, we compute the $R_d, R_f,$ and $R_d$ from the models of~\citet{threlkeld1957direct} and~\citet{masters2013renewable}.\footnote{Higher fidelity models are known to exist, such as those developed by~\citet{klein1977calculation} and~\citet{kamali2006estimating}. In particular, our estimates of the diffuse and reflective radiation are simple relative to the best known models. (This choice was made to make the simulation more efficient.)}
+{\bf (2) Computing $\pmb{R_d, R_f, R_r}$:} Given the sun's altitude $\alpha$ and azimuth $\Gamma$, we compute the $R_d, R_f,$ and $R_d$ from the models of~\citet{threlkeld1957direct} and~\citet{masters2013renewable}.%\footnote{Higher fidelity models are known to exist, such as those developed by~\citet{klein1977calculation} and~\citet{kamali2006estimating}. In particular, our estimates of the diffuse and reflective radiation are simple relative to the best known models. (This choice was made to make the simulation more efficient.)}
 % --- Math about R_d, R_f, R_r ---
 \begin{align}
 R_d = A e^{-km}, \hspace{2mm} R_f = C \cdot R_d, \hspace{2mm} R_r = \rho R_d (\sin \alpha + C),
@@ -208,7 +208,7 @@ Cloud cover is generated as Gaussian blobs in the synthesized images. The cloud 
 0.2&\text{Unif}(2:4) \\
 \end{bmatrix}.
 \end{align}
-Where $\text{Unif}(x:y)$ denotes a uniform random sample from the natural interval $[x:y]$, and $N$ is the dimension of the image (which we set to 16). The intensity of the cloud corresponds to the value of the Gaussian. Surprisingly, studies demonstrate that diffuse irradiance can be either magnified~\cite{robinson1966solar} or decreased~\cite{pfister2003cloud} by cloud cover, depending on specific conditions. In light of these findings, our main interest in experimenting with clouds is to evaluate RL approaches on a rich state space. Direct irradiance $(R_d)$, however, is almost always decreased by cloud cover. Thus, if a cloud sits between the panel and the sun, we reduce the direct irradiance hitting the panel's surface by a factor proportional to the cloud's intensity, but choose not to alter the diffuse irradiance due to conflicting empirical findings on its impact~\cite{robinson1966solar,pfister2003cloud}. %In most experiments involving cloud cover, the clouds reduce the direct irradiance by anywhere from $0\%$ to $40\%$ at various points throughout the day. 
+Where $\text{Unif}(x:y)$ denotes a uniform random sample from the natural interval $[x:y]$, and $N$ is the dimension of the image (which we set to 16). The intensity of the cloud corresponds to the value of the Gaussian. Surprisingly, studies show that diffuse irradiance can be either magnified~\cite{robinson1966solar} or decreased~\cite{pfister2003cloud} by cloud cover, depending on conditions. In light of these findings, our main interest in experimenting with clouds is to evaluate RL approaches with a rich state space. Direct irradiance $(R_d)$, however, is almost always decreased by cloud cover. Thus, if a cloud sits between the panel and the sun, we reduce the direct irradiance hitting the panel's surface proportional to the cloud's intensity, but choose not to alter the diffuse irradiance~\cite{robinson1966solar,pfister2003cloud}. %In most experiments involving cloud cover, the clouds reduce the direct irradiance by anywhere from $0\%$ to $40\%$ at various points throughout the day. 
 
 
 
@@ -225,6 +225,22 @@ Our core algorithms are $Q$-Learning (\texttt{ql-lin}) and SARSA (\texttt{sarsa-
 \end{align*}
 Where $t$ is a time step, and the update is performed every 500 time steps. For  \texttt{q-lin} and \texttt{sarsa-lin} we chose to set $\gamma=0.99$ to emphasize the long term consequences of behavior, contrasted with LinUCB and the short-sighted version of $Q$-Learning with $\gamma = 0$ (\texttt{q-lin, $\gamma = 0$}). Our benchmark algorithm is Algorithm 2 from~\citet{Grena2012}, an efficient but accurate solar tracking algorithm, coupled with a controller that always points perfectly at the tracker's estimate of the sun's location. We also provide results for a fixed panel to illustrate the importance of tracking (\texttt{fixed}), and a highly idealized controller that computes the perfect orientation at each decision step to illustrate an upper bound on possible performance (\texttt{optimal}), and to visualize the degree of sub-optimality of the other approaches. All of our code for running experiments and for reproducing results is publicly available.\footnote{\url{https://github.com/david-abel/solar_panels_rl/experiments}}
 
+
+
+% Results (reykjavik)
+\begin{figure*}[!t]
+\begin{center}
+	\subfloat[True Sun Angles]{\includegraphics[scale=0.24]{figures/mildura/l_true_cumulative}} \hspace{1mm}% True sun angles percept.
+	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.24]{figures/mildura/l_img_cumulative}} \hspace{1mm} % Sun image percept.
+	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.24]{figures/mildura/l_cloud_cumulative}} \\ % Sun image w/ clouds percept.
+	\subfloat[True Sun Angles]{\includegraphics[scale=0.24]{figures/reykjavik/l_true_cumulative}} \hspace{1mm} % True sun angles percept.
+	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.24]{figures/reykjavik/l_img_cumulative}} \hspace{1mm} % Sun image percept.
+	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.24]{figures/reykjavik/l_cloud_cumulative}} \\ % Sun image w/ clouds percept.
+%\caption{Cumulative irradiance falling on the panel's surface given different percepts over eight days of learning in Reykjavik, Iceland in July of 2020.}
+\caption{Cumulative irradiance falling on the panel's surface given different percepts over four days in Mildura, Australia in July of 2015 (top) and eight days in Reykjavik, Iceland in July of 2020 (bottom).}
+\label{fig:results}
+\end{center}
+\end{figure*}
 
 %In a separate experiment, we explore the performance difference between a single- and double-axis panel. For the single-axis panel, each agent can only tilt the panel along the East--West axis. For this experiment, we evaluated the core algorithms from our other experiment in New York City, NY during the first five days of August 2018. All of our code for running experiments and for reproducing results is publicly available.\footnote{{\it Link redacted during review.}} %\url{https://github.com/david-abel/solar_panels_rl/experiments}}.
 
@@ -251,21 +267,6 @@ Where $t$ is a time step, and the update is performed every 500 time steps. For 
 Figure~\ref{fig:results} illustrates the cumulative irradiance exposed to each panel in the Australia experiments (top) and the Iceland experiments (bottom). Notably, with the simple percept of the true sun angles, {\it all} of the learning algorithms outperform the baseline tracker and fixed panel in Australia, while in Iceland, \texttt{lin-ucb} performs worse than the \texttt{fixed} panel for the first two percepts. When just the image is provided in Australia, \texttt{lin-ucb} achieves by far the best performance; we hypothesize that this is due to LinUCB's informed approach to exploration compared to the $\varepsilon$-greedy used by \texttt{sarsa-lin} and both \texttt{ql-lin} and \texttt{ql-lin, $\gamma=0$}. Additionally, when just the sun is in the image, there is little incentive to forecast expected future reward beyond the immediate next step, which may explain the success of \texttt{lin-ucb}. This is further corroborated by the fact that \texttt{ql-lin, $\gamma=0$} does quite well in the experiment as well. Conversely, we see that \texttt{lin-ucb} continues to struggle in Iceland. When clouds are present, \texttt{lin-ucb} performs comparably to the other learners. The cloudy image percepts pose a challenging RL problem, but still we see that the simple approaches achieve similar performance as the \texttt{grena-tracker}, and note the substantial room for improvement from further training or more complex learners. In Iceland, the results are largely the same as Australia, though we note that the \texttt{grena-tracker} does better. 
 
 
-% Results (reykjavik)
-\begin{figure*}[!t]
-\begin{center}
-	\subfloat[True Sun Angles]{\includegraphics[scale=0.24]{figures/mildura/l_true_cumulative}} \hspace{1mm}% True sun angles percept.
-	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.24]{figures/mildura/l_img_cumulative}} \hspace{1mm} % Sun image percept.
-	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.24]{figures/mildura/l_cloud_cumulative}} \\ % Sun image w/ clouds percept.
-	\subfloat[True Sun Angles]{\includegraphics[scale=0.24]{figures/reykjavik/l_true_cumulative}} \hspace{1mm} % True sun angles percept.
-	\subfloat[Bitmap of the Sky]{\includegraphics[scale=0.24]{figures/reykjavik/l_img_cumulative}} \hspace{1mm} % Sun image percept.
-	\subfloat[Bitmap of the Cloudy Sky]{\includegraphics[scale=0.24]{figures/reykjavik/l_cloud_cumulative}} \\ % Sun image w/ clouds percept.
-%\caption{Cumulative irradiance falling on the panel's surface given different percepts over eight days of learning in Reykjavik, Iceland in July of 2020.}
-\caption{Cumulative irradiance falling on the panel's surface given different percepts over four days in Mildura, Australia in July of 2015 (top) and eight days in Reykjavik, Iceland in July of 2020 (bottom).}
-\label{fig:results}
-\end{center}
-\end{figure*}
-
 In all cases, we note that there is room for improvement, suggesting that more sophisticated approaches may have more success on real panels than current techniques. In all our simulations, the \texttt{grena-tracker} consistently outperforms the \texttt{fixed-panel} by around $25\%$, consistent with previously published results~\cite{Eke2012,mousazadeh2009review,clifford2004design}. %We take this alignment as further support of the accuracy of our simulation.
 
 %Figure~\ref{fig:results_axis} shows results for experiments comparing the {\it advantage} of the two-axis controller vs.\ a single-axis controller. In all cases except for \texttt{lin-ucb}, the presence of another axis immediately improves performance. Clearly the added problem complexity of the larger state-action space doesn't detract from the quality of the policy that the RL agents learn. We also observe that \texttt{lin-ucb} barely sees any performance gain from using the dual-axis controller.
@@ -275,11 +276,6 @@ In all cases, we note that there is room for improvement, suggesting that more s
 
 
 %Figure~\ref{fig:results_rho} provides results comparing the effect of different reflective indices. Since the reflection isn't part of the observation received by any of the agents, we might not expect the 
-
-
-
-
-
 
 
 
