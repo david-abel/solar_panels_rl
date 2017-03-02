@@ -60,21 +60,21 @@ Solar panels, Renewable Energy, Computational Sustainability
 \newpage
 \section{Introduction}
 % Solare Panels and Solar Tracking.
-Solar energy offers a pollution free and sustainable means of harvesting energy directly from the sun. Considerable effort has been directed toward maximizing the efficiency of end-to-end solar systems, including the design of photovoltaic cells~\cite{Jervase2001,li2012molecular}, engineering new photovoltaic architectures and materials~\cite{li2005high}, and solar tracking systems~\cite{camacho2012control}. Solar tracking is especially important for maximizing performance of solar panels~\cite{Eke2012,Rizk2008,King2001}. Given the proper sensors and hardware, a tracking algorithm can compute the relative location of the sun in the sky throughout the day, and a controller can orient the panel to point at the sun, illustrated in Figure~\ref{fig:solar}. Its goal is to minimize the angle of incidence between incoming solar radiant energy and the grid of photovoltaic cells, as in~\citet{Eke2012,Benghanem2011,King2001} and~\citet{kalogirou1996design}.
+Solar energy offers a pollution free and sustainable means of harvesting energy directly from the sun. Considerable effort has been directed toward maximizing the efficiency of end-to-end solar systems, including the design of photovoltaic cells~\cite{li2012molecular}, engineering new photovoltaic materials~\cite{li2005high}, and solar tracking systems~\cite{camacho2012control}. Solar tracking is especially important for maximizing performance of solar panels~\cite{Eke2012,Rizk2008,King2001}. Given the proper sensors and hardware, tracking algorithms compute the relative location of the sun in the sky throughout the day. Then, a controller orients the panel to point at the sun, illustrated in Figure~\ref{fig:solar}. The goal is to minimize the angle of incidence between incoming solar radiant energy and the grid of photovoltaic cells, as in~\citet{Eke2012} and \citet{Benghanem2011}.
 
 Prior work has consistently demonstrated that panels using a tracking system increase the total energy by a substantial amount:~\citet{Eke2012} report that a dual-axis tracker yielded 71 kW/h, compared to a fixed panel's yield of 52 kW/h on the same day. They also report energy harvesting gains of dual-axis tracking systems over fixed systems varying from 15\% to 40\%, depending on the time of year.~\citet{mousazadeh2009review} report that gains from tracking vary between 0\% and 100\%, while~\citet{clifford2004design} report a gain of $23\%$ due to tracking in simulation. Solar tracking and control results in non-trivial benefits in solar photovoltaic systems.
 
 % Diagram with labels
 \begin{figure}[b!]
 \begin{center}
-\includegraphics[scale=0.315]{figures/relevant_quantities.png}
+\includegraphics[scale=0.355]{figures/relevant_quantities.png}
 \caption{In the solar panel control problem, the panel changes orientation over time to maximize exposure to solar radiant energy.}
 \label{fig:solar}
 \end{center}
 \end{figure}
 
 % Previous algorithms
-Recent work in solar tracking has focused on algorithms that are sufficiently accurate to inform control of panels, building on the early work of~\citet{spencer1971fourier,walraven1978calculating} and~\citet{michalsky1988astronomical}. The algorithm introduced by~\citet{reda2004solar} computes the sun's location in the sky within $\pm 0.0003\degree$ of accuracy, achieving the highest degree of accuracy of any known algorithm, but is computationally inefficient to the point of impracticality.~\citet{Grena2008} overcomes these inefficiencies with a tracking algorithm that requires an order of magnitude fewer calculations while still achieving $0.0027\degree$ of accuracy.
+Recent work in solar tracking has focused on algorithms that are sufficiently accurate to inform control of panels, building on the early work of~\citet{spencer1971fourier} and~\citet{michalsky1988astronomical}. The algorithm introduced by~\citet{reda2004solar} computes the sun's location in the sky within $\pm 0.0003\degree$ of accuracy, achieving the highest degree of accuracy of any known algorithm, but is computationally inefficient to the point of impracticality.~\citet{Grena2008} overcomes these inefficiencies with a tracking algorithm that requires an order of magnitude fewer calculations while still achieving $0.0027\degree$ of accuracy.
 
 % Limitations
 However, prior literature suggests that a variety of factors contribute to the performance of a panel~\cite{King2001}, and thus, pointing directly at the sun is not always optimal behavior. Specifically, the total solar irradiance falling on a panel is a combination of {\it direct}, {\it reflective}, and {\it diffuse} irradiance~\cite{Benghanem2011}. The diffuse irradiance typically varies between $15\%$ and $55\%$ of direct irradiance depending on factors like cloud coverage and the time of day~\cite{peterson1981ratio}, while a case study by the Cold Climate Housing Research Center in Fairbanks, Alaska reports reflective irradiance varying from $5\%$ to $25\%$ of direct irradiance~\cite{colgan2010}. The reflective irradiance depends on the percentage of irradiance reflected off the surrounding ground surface: Typical values for this percentage given by~\citet{mcevoy2003practical} vary between $17\%$ (soil), $55\%$ (concrete), and $90\%$ (snow). Additionally, changing weather conditions can affect the optimal panel orientation~\cite{Kelly2009}. Thus, optimal performance may involve prioritizing reflective or diffuse irradiance when direct sunlight is unavailable.
@@ -137,7 +137,7 @@ We introduce a high fidelity simulated environment to validate the use of RL for
 
 % (Step 1) Sun location in the sky.
 %\subsection{Sun's location in the sky}
-{\bf (1) Sun's location in the sky}: For a given latitude, longitude, year, month, day, and time, we simulate the relative positions of the sun to the specified location on earth. Our simulation computes the sun's altitude $\alpha$ (angle: degrees above the horizon) and azimuth $\Gamma$ (angle: clockwise degrees along the horizon relative to North) using the accurate tracker algorithm from~\citet{reda2004solar} implemented in the open source library \texttt{pysolar}.\footnote{\url{pysolar.org}} Due to space constraints, we do not express the full computation. For the details, see~\citet{reda2004solar}.%. Note, however, that a quicker approximation (also available in \texttt{pysolar}) is given by:
+{\bf (1) Sun's location in the sky}: For a given latitude, longitude, year, month, day, and time, we simulate the relative positions of the sun to the specified location on earth. Our simulation computes the sun's altitude $\alpha$ (angle: degrees above the horizon) and azimuth $\Gamma$ (angle: clockwise degrees along the horizon relative to North) using the accurate tracker algorithm from~\citet{reda2004solar} implemented in the open source library \texttt{pysolar}.\footnote{\url{pysolar.org}} Due to space constraints, we do not give the full computation. %For the details, see~\citet{reda2004solar}.%. Note, however, that a quicker approximation (also available in \texttt{pysolar}) is given by:
 % --- Math about \alpha and \Gamma ---
 %\begin{align}
 %\alpha = \arcsin(\cos L \cos \delta \cos H + \sin L \sin \delta), \hspace{4mm} \Gamma = \arcsin\left(\frac{\cos \delta \sin H}{\cos \alpha}\right).
@@ -146,7 +146,7 @@ We introduce a high fidelity simulated environment to validate the use of RL for
 
 % (Step 2) Irradiance.
 %\subsection{Computing $\pmb{R_d, R_f, R_r}$}
-{\bf (2) Computing $\pmb{R_d, R_f, R_r}$:} Given the sun's altitude $\alpha$ and azimuth $\Gamma$, we compute the $R_d, R_f,$ and $R_d$ from the models of~\citet{threlkeld1957direct} and~\citet{masters2013renewable}.\footnote{Higher fidelity models are known to exist, such as those developed by~\citet{andersen1980comments,klein1977calculation} and~\citet{kamali2006estimating}. In particular, our estimates of the diffuse and reflective radiation are simple relative to the best known models. (This choice was made to make the simulation more efficient.)}
+{\bf (2) Computing $\pmb{R_d, R_f, R_r}$:} Given the sun's altitude $\alpha$ and azimuth $\Gamma$, we compute the $R_d, R_f,$ and $R_d$ from the models of~\citet{threlkeld1957direct} and~\citet{masters2013renewable}.\footnote{Higher fidelity models are known to exist, such as those developed by~\citet{klein1977calculation} and~\citet{kamali2006estimating}. In particular, our estimates of the diffuse and reflective radiation are simple relative to the best known models. (This choice was made to make the simulation more efficient.)}
 % --- Math about R_d, R_f, R_r ---
 \begin{align}
 R_d = A e^{-km}, \hspace{2mm} R_f = C \cdot R_d, \hspace{2mm} R_r = \rho R_d (\sin \alpha + C),
@@ -198,7 +198,7 @@ For both image percepts, the perceived fraction of the sky changes as the panel 
 \end{center}
 \end{figure}
 
-Cloud cover is generated as Gaussian blobs in the synthesized images. The cloud conditions are randomized each morning at 4am, with the clouds moving from the left side of the image to the right (across the sky) throughout the course of the day (1 pixel per hour). Each day at 4am, we generate between 1 and 5 clouds uniformly at random, with each cloud is modeled as a Multivariate Gaussian. Parameters are randomized as:
+Cloud cover is generated as Gaussian blobs in the synthesized images. The cloud conditions are randomized each morning at 4am, with the clouds moving from the left side of the image to the right (across the sky) throughout the course of the day (1 pixel per hour). Each day at 4am, we generate between 1 and 5 clouds uniformly at random, with each cloud modeled as a Multivariate Gaussian. Parameters are randomized as:
 \begin{align}
 \mu \sim \begin{bmatrix}
 \text{Unif}(0:N)&  \text{Unif}(0:N) \\
@@ -208,7 +208,7 @@ Cloud cover is generated as Gaussian blobs in the synthesized images. The cloud 
 0.2&\text{Unif}(2:4) \\
 \end{bmatrix}.
 \end{align}
-Where $\text{Unif}(x:y)$ denotes a uniform random sample from the natural interval $[x:y]$, and $N$ is the dimension of the image (which we set to 16). The intensity of the cloud corresponds to the value of the Gaussian. Surprisingly, studies demonstrate that diffuse irradiance can be either magnified~\cite{robinson1966solar} or decreased~\cite{pfister2003cloud} by cloud cover, depending on specific conditions. In light of these findings, our main interest in experimenting with clouds is to evaluate RL approaches on a rich state space. Direct irradiance $(R_d)$, however, is almost always decreased by cloud cover. Thus, if a cloud sits between the panel and the sun, we reduce the direct irradiance hitting the panel's surface by a factor proportional to the cloud's intensity, but choose not to alter the diffuse irradiance, since there are conflicting empirical findings on its impact~\cite{robinson1966solar,pfister2003cloud}. %In most experiments involving cloud cover, the clouds reduce the direct irradiance by anywhere from $0\%$ to $40\%$ at various points throughout the day. 
+Where $\text{Unif}(x:y)$ denotes a uniform random sample from the natural interval $[x:y]$, and $N$ is the dimension of the image (which we set to 16). The intensity of the cloud corresponds to the value of the Gaussian. Surprisingly, studies demonstrate that diffuse irradiance can be either magnified~\cite{robinson1966solar} or decreased~\cite{pfister2003cloud} by cloud cover, depending on specific conditions. In light of these findings, our main interest in experimenting with clouds is to evaluate RL approaches on a rich state space. Direct irradiance $(R_d)$, however, is almost always decreased by cloud cover. Thus, if a cloud sits between the panel and the sun, we reduce the direct irradiance hitting the panel's surface by a factor proportional to the cloud's intensity, but choose not to alter the diffuse irradiance due to conflicting empirical findings on its impact~\cite{robinson1966solar,pfister2003cloud}. %In most experiments involving cloud cover, the clouds reduce the direct irradiance by anywhere from $0\%$ to $40\%$ at various points throughout the day. 
 
 
 
@@ -303,8 +303,6 @@ In all cases, we note that there is room for improvement, suggesting that more s
 %We have here demonstrated the benefits of using a reinforcement-learning approach to improving the efficiency of solar panels over several established baselines. We introduced a high fidelity testbed for the problem of solar energy harvesting capable of simulating solar irradiance models anywhere on earth with a variety of generated percepts to approximate real world conditions. In the future, the natural next step is to implement a functioning RL controller on real solar panels. Additionally, there are novel algorithmic challenges posed by the solar panel setting. First, movement, observation, and computation all expend energy; incorporating these expenditures explicitly into the model poses both challenging planning and exploration questions. Second,~\citet{Hsu2015} demonstrate that simple RL approaches can optimize the problem of Maximum Power Point Tracking (MPTT) for solar panels. A system that jointly optimizes over these two criteria poses another difficult challenge.
 %We are also interested in investigating transfer learning between our simulation and the real world, similar to the work of~\cite{Taylor2007}.
 %Lastly, we plan on applying RL to the analogous control problem presented by solar thermal energy~\cite{kalogirou2004solar}.
-
-
 
 
 
