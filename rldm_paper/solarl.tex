@@ -54,6 +54,10 @@ We evaluate the utility of various RL approaches compared to an idealized contro
 Solar panels, Renewable Energy, Computational Sustainability
 }
 
+%\acknowledgements{
+%We thank Kavosh Asadi and Miles Brundage for helpful conversations.
+%}
+
 % ----------------------
 % -- Introduction --
 % ----------------------
@@ -67,7 +71,7 @@ Prior work has consistently demonstrated that panels using a tracking system inc
 % Diagram with labels
 \begin{figure}[b!]
 \begin{center}
-\includegraphics[scale=0.355]{figures/relevant_quantities.png}
+\includegraphics[scale=0.395]{figures/relevant_quantities.png}
 \caption{In the solar panel control problem, the panel changes orientation over time to maximize exposure to solar radiant energy.}
 \label{fig:solar}
 \end{center}
@@ -137,11 +141,11 @@ We introduce a high fidelity simulated environment to validate the use of RL for
 
 % (Step 1) Sun location in the sky.
 %\subsection{Sun's location in the sky}
-{\bf (1) Sun's location in the sky}: For a given latitude, longitude, year, month, day, and time, we simulate the relative positions of the sun to the specified location on earth. Our simulation computes the sun's altitude $\alpha$ (angle: degrees above the horizon) and azimuth $\Gamma$ (angle: clockwise degrees along the horizon relative to North) using the accurate tracker algorithm from~\citet{reda2004solar} implemented in the open source library \texttt{pysolar}.\footnote{\url{pysolar.org}} Due to space constraints, we do not give the computation. %For the details, see~\citet{reda2004solar}.%. Note, however, that a quicker approximation (also available in \texttt{pysolar}) is given by:
+{\bf (1) Sun's location in the sky}: For a given latitude, longitude, year, month, day, and time, we simulate the relative positions of the sun to the specified location on earth. Our simulation computes the sun's altitude $\alpha$ (angle: degrees above the horizon) and azimuth $\Gamma$ (angle: clockwise degrees along the horizon relative to North) using the accurate tracker algorithm from~\citet{reda2004solar} implemented in the open source library \texttt{pysolar}.\footnote{\url{pysolar.org}} Due to space constraints, we do not give the full computation. Note, however, that a quicker approximation (also available in \texttt{pysolar}) is given by:
 % --- Math about \alpha and \Gamma ---
-%\begin{align}
-%\alpha = \arcsin(\cos L \cos \delta \cos H + \sin L \sin \delta), \hspace{4mm} \Gamma = \arcsin\left(\frac{\cos \delta \sin H}{\cos \alpha}\right).
-%\end{align}
+\begin{align}
+\alpha = \arcsin(\cos L \cos \delta \cos H + \sin L \sin \delta), \hspace{4mm} \Gamma = \arcsin\left(\frac{\cos \delta \sin H}{\cos \alpha}\right).
+\end{align}
 
 
 % (Step 2) Irradiance.
