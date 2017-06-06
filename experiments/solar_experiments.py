@@ -142,26 +142,11 @@ def setup_experiment(percept_type, loc="australia", test_both_axes=False, reflec
 def main():
 
     # Setup experiment parameters, agents, mdp.
-    # loc, steps = "australia", 20*24*4
-    # loc, steps = "nyc", 20*24*10
     loc, steps = "nyc", 6*24
     sun_agents, sun_solar_mdp = setup_experiment("sun_percept", loc=loc)
-    img_agents, img_solar_mdp = setup_experiment("image_percept", loc=loc) #, reflective_index_exp=True)
-    img_cloud_agents, img_cloud_solar_mdp = setup_experiment("image_cloud_percept", loc=loc) # reflective_index=0.1)
-
-    # Axis experiment.
-    # daxis_agents, daxis_mdp = setup_experiment("sun_percept", loc="nyc", test_both_axes=True) # reflective_index=0.1)
-    # run_agents_on_mdp(daxis_agents, daxis_mdp, num_instances=5, num_episodes=1, num_steps=20*24*5, clear_old_results=True)
 
     # # Run experiments.
-    run_agents_on_mdp(sun_agents, sun_solar_mdp, num_instances=10, num_episodes=1, num_steps=steps, clear_old_results=True)
-    # run_agents_on_mdp(img_agents, img_solar_mdp, num_instances=10, num_episodes=1, num_steps=steps, clear_old_results=False)
-    # run_agents_on_mdp(img_cloud_agents, img_cloud_solar_mdp, num_instances=5, num_episodes=1, num_steps=steps, clear_old_results=False)
-
-    # Deterministic agents.
-    # run_agents_on_mdp(deterministic_agents, sun_solar_mdp, num_instances=1, num_episodes=1, num_steps=steps, clear_old_results=False)
-    # run_agents_on_mdp(deterministic_agents, img_solar_mdp, num_instances=1, num_episodes=1, num_steps=steps, clear_old_results=False)
-    # run_agents_on_mdp(img_cloud_agents, img_cloud_solar_mdp, num_instances=10, num_episodes=1, num_steps=steps, clear_old_results=False)
+    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=10, episodes=1, steps=steps, clear_old_results=True)
 
     
 if __name__ == "__main__":
