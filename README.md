@@ -1,4 +1,6 @@
 # solar_panels_rl
-Repository for project on applying RL to Solar Panel Problems 
+Code associated with our paper, "[Improving Solar Panel Efficiency Using Reinforcement Learning](http://cs.brown.edu/~dabel/papers/solarl.pdf)" by David Abel, Emily Reif, and Michael Littman, presented at RLDM 2017. This work focuses on applying reinforcement learning techniques to Solar Tracking.
 
-Authors: Emily Reif and David Abel
+Experiments require [simple_rl](https://github.com/david-abel/simple_rl).
+
+Contact david_abel@brown.edu with any questions.
