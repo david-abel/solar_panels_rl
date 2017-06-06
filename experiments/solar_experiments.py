@@ -41,18 +41,18 @@ def _make_mdp(loc, percept_type, panel_step, reflective_index=0.5):
 
     # Location.
     if loc == "australia":
-        date_time = datetime.datetime(day=1, hour=18, month=6, year=2015)
+        date_time = datetime.datetime(day=1, hour=1, month=1, year=2015)
         lat, lon = -34.25, 142.17
     elif loc == "iceland":
         date_time = datetime.datetime(day=3, hour=16, month=7, year=2020)
         lat, lon = 64.1265, -21.8174
     elif loc == "nyc":
-        date_time = datetime.datetime(day=1, hour=18, month=8, year=2018)
+        date_time = datetime.datetime(day=1, hour=1, month=2, year=2015)
         lat, lon = 40.7, 74.006
 
     # Make MDP.
     solar_mdp = SolarOOMDP(date_time, \
-        timestep=3.0, \
+        timestep=10.0, \
         latitude_deg=lat, \
         longitude_deg=lon, \
         panel_step=panel_step, \
@@ -86,9 +86,9 @@ def _setup_agents(solar_mdp, test_both_axes=False, reflective_index_exp=False):
     grena_tracker_d_agent = FixedPolicyAgent(grena_tracker_d.get_policy(), name="grena-tracker")
 
     # Setup RL agents
-    alpha, epsilon = 0.3, 0.1
+    alpha, epsilon = 0.6, 0.6
     lin_ucb_agent_s = LinUCBAgent(saxis_actions, name="lin-ucb-single")
-    lin_ucb_agent_d = LinUCBAgent(actions, name="lin-ucb")#, alpha=0.2) #, alpha=0.2)
+    lin_ucb_agent_d = LinUCBAgent(actions, name="lin-ucb") #, alpha=0.2) #, alpha=0.2)
     ql_lin_approx_agent_s = LinearApproxQLearnerAgent(saxis_actions, name="ql-lin-single-$\gamma=0$", alpha=alpha, epsilon=epsilon, gamma=gamma, rbf=True)
     ql_lin_approx_agent_d = LinearApproxQLearnerAgent(actions, name="ql-lin-g0", alpha=alpha, epsilon=epsilon, gamma=0, rbf=True, anneal=True)
     sarsa_lin_rbf_agent_s = LinearApproxSarsaAgent(saxis_actions, name="sarsa-lin-single", alpha=alpha, epsilon=epsilon, gamma=gamma, rbf=True)
@@ -108,9 +108,8 @@ def _setup_agents(solar_mdp, test_both_axes=False, reflective_index_exp=False):
         agents = [grena_tracker_d_agent, sarsa_lin_rbf_agent_d]
     else:
         # Regular experiments.
-        # agents = [grena_tracker_d_agent, static_agent, lin_ucb_agent_d, sarsa_lin_rbf_agent_d, ql_lin_approx_agent_d]
-        agents = [ql_lin_approx_agent_d] #, sarsa_lin_rbf_agent_d, ql_lin_approx_agent_d]
-        # agents = [optimal_agent]
+        agents = [sarsa_lin_rbf_agent_d, ql_lin_approx_agent_d, lin_ucb_agent_d]
+        #fixed_agents = [grena_tracker_d_agent, static_agent]
 
     return agents
 
@@ -145,7 +144,7 @@ def main():
     # Setup experiment parameters, agents, mdp.
     # loc, steps = "australia", 20*24*4
     # loc, steps = "nyc", 20*24*10
-    loc, steps = "iceland", 20*24*8
+    loc, steps = "nyc", 6*24
     sun_agents, sun_solar_mdp = setup_experiment("sun_percept", loc=loc)
     img_agents, img_solar_mdp = setup_experiment("image_percept", loc=loc) #, reflective_index_exp=True)
     img_cloud_agents, img_cloud_solar_mdp = setup_experiment("image_cloud_percept", loc=loc) # reflective_index=0.1)
@@ -155,9 +154,9 @@ def main():
     # run_agents_on_mdp(daxis_agents, daxis_mdp, num_instances=5, num_episodes=1, num_steps=20*24*5, clear_old_results=True)
 
     # # Run experiments.
-    run_agents_on_mdp(sun_agents, sun_solar_mdp, num_instances=10, num_episodes=1, num_steps=steps, clear_old_results=False)
-    run_agents_on_mdp(img_agents, img_solar_mdp, num_instances=10, num_episodes=1, num_steps=steps, clear_old_results=False)
-    run_agents_on_mdp(img_cloud_agents, img_cloud_solar_mdp, num_instances=5, num_episodes=1, num_steps=steps, clear_old_results=False)
+    run_agents_on_mdp(sun_agents, sun_solar_mdp, num_instances=10, num_episodes=1, num_steps=steps, clear_old_results=True)
+    # run_agents_on_mdp(img_agents, img_solar_mdp, num_instances=10, num_episodes=1, num_steps=steps, clear_old_results=False)
+    # run_agents_on_mdp(img_cloud_agents, img_cloud_solar_mdp, num_instances=5, num_episodes=1, num_steps=steps, clear_old_results=False)
 
     # Deterministic agents.
     # run_agents_on_mdp(deterministic_agents, sun_solar_mdp, num_instances=1, num_episodes=1, num_steps=steps, clear_old_results=False)
