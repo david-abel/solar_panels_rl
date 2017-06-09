@@ -4,9 +4,9 @@ Code associated with our paper:
 
 Our work focuses on applying reinforcement learning techniques to improve Solar Tracking.
 
-Experiments require [simple_rl](https://github.com/david-abel/simple_rl), which can be installed with the usual:
+Experiments require [pysolar](http://pysolar.org/) version [0.6](https://github.com/pingswept/pysolar/releases/tag/0.6), and [simple_rl](https://github.com/david-abel/simple_rl) version 0.74, which can be installed with the usual:
 
-	pip install simple_rl
+	pip install simple_rl==0.74
 
 
 ## Example
