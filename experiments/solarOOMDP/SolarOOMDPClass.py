@@ -27,7 +27,7 @@ class SolarOOMDP(OOMDP):
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    def __init__(self, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=40.7, longitude_deg=142.17, img_dims=64, dual_axis=True, image_mode=False, cloud_mode=False):
+    def __init__(self, panel, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=40.7, longitude_deg=142.17, img_dims=64, dual_axis=True, image_mode=False, cloud_mode=False):
 
         # Error check the lat/long.
         if abs(latitude_deg) > 90 or abs(longitude_deg) > 180:
@@ -43,6 +43,9 @@ class SolarOOMDP(OOMDP):
         if not(dual_axis):
             SolarOOMDP.ACTIONS = get_single_axis_actions()
 
+        #get panel information.
+        self.panel = panel
+
         # Image stuff.
         self.img_dims = 16
         self.image_mode = image_mode
@@ -53,7 +56,7 @@ class SolarOOMDP(OOMDP):
         self.latitude_deg = latitude_deg # positive in the northern hemisphere
         self.longitude_deg = longitude_deg # negative reckoning west from prime meridian in Greenwich, England
         self.panel_step = panel_step
-        self.timestep = timestep
+        self.timestep = timestep #timestep in minutes
         self.reflective_index = reflective_index
 
         # Time stuff.
@@ -145,11 +148,28 @@ class SolarOOMDP(OOMDP):
             reward = self._compute_optimal_reward(sun_altitude_deg, sun_azimuth_deg)
 
         else:
-            reward = self._compute_reward(sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg)
+            flux = self._compute_flux(sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg)
+            #compute electrical power output of panel for given flux
+            power = self.panel.get_power(flux)
+            # convert timestep to seconds
+            energy = power*self.timestep*60 # Joules
+
+
+            cost = 0 # in Joules
+
+            #get cost of motion
+            if action == "panel_forward_ew" or action == "panel_back_ew":
+                cost = self.panel.get_rotation_energy_for_axis('ew', np.radians(panel_ew_deg), np.radians(self.panel_step))
+            elif action == "panel_forward_ns" or action == "panel_back_ns":
+                cost = self.panel.get_rotation_energy_for_axis('ns', np.radians(panel_ns_deg), np.radians(self.panel_step))
+
+            print "energy collected during timestep: {} cost of action {}: {}".format(energy, action, cost)
+
+            reward = energy - cost
 
         return reward
 
-    def _compute_reward(self, sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg):
+    def _compute_flux(self, sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg):
         # Cloud stuff.
         direct_cloud_modifer = 1.0
         if self.cloud_mode:
@@ -167,11 +187,11 @@ class SolarOOMDP(OOMDP):
         reflective_tilt_factor = sh._compute_reflective_radiation_tilt_factor(panel_ns_deg, panel_ew_deg)
 
         # Compute total.
-        reward = direct_cloud_modifer * direct_rads * direct_tilt_factor + \
+        flux = direct_cloud_modifer * direct_rads * direct_tilt_factor + \
                     diffuse_rads * diffuse_tilt_factor + \
                     reflective_rads * reflective_tilt_factor
 
-        return reward
+        return flux
 
     '''
     Computes the optimal reward possible for a given sun position.

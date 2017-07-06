@@ -10,7 +10,7 @@ Contains tracking functions for computing the location of the sun, primarily fro
 # Python libs.
 import math as m
 import numpy
-from pysolar import solar
+from Pysolar import solar
 
 from solarOOMDP import solar_helpers as sh
 
@@ -33,7 +33,7 @@ def _compute_new_times(year, month, day, hour):
 
     time = int(365.25 * (year - 2000)) + int(30.6001 * (month + 1)) \
         - int(0.01 * year) + day + 0.0416667* hour - 21958
-    
+
     delta_t = 96.4 + 0.00158 * time # Diff between UT and TT (in seconds). Seems right.
 
     te = time + 1.1574 * 10**(-5) * delta_t
@@ -128,7 +128,7 @@ def grena_tracker(state, simple=True):
     decl = 6.57e-3 + 7.347e-2*s1 - 3.9919e-1*c1 + 7.3e-4*s2 - 6.60e-3*c2 + 1.50e-3*s3 - 2.58e-3*c3 + 6e-5*s4 - 1.3e-4*c4 + 0.2967
     hour_angle = 1.75283 + 6.3003881*t + longitude_rad - right_asc
     hour_angle = ((hour_angle + m.pi) % pi_2) - m.pi
-    
+
     if (hour_angle < -m.pi):
         hour_angle += pi_2
 
@@ -172,7 +172,7 @@ def _final_step(right_asc, declination, hour_angle, latitude, longitude):
         Implements Section 3.7 of [Grena 2012], which determines the azimuth and zenith.
     '''
     lat_radians, long_radians = m.radians(latitude), m.radians(longitude)
-    
+
 
     sp = m.sin(lat_radians)
     cp = m.sqrt((1-sp*sp))

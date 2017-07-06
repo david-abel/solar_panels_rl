@@ -14,6 +14,7 @@ from simple_rl.agents import RandomAgent, FixedPolicyAgent, LinearApproxQLearner
 
 # Local imports.
 from solarOOMDP.SolarOOMDPClass import SolarOOMDP
+from solarOOMDP.PanelClass import Panel
 from SolarTrackerClass import SolarTracker
 import tracking_baselines as tb
 
@@ -27,6 +28,9 @@ def _make_mdp(loc, percept_type, panel_step, reflective_index=0.5):
     Returns:
         (solarOOMDP)
     '''
+    #panel information
+    #TODO: check actuator force - how does it scale with panel mass?
+    panel = Panel(1, 1, 10, 0.22, 1500, 0.10, 0.5, 0.1, 0.5)
     
     # Percepts.
     try:
@@ -51,7 +55,8 @@ def _make_mdp(loc, percept_type, panel_step, reflective_index=0.5):
         lat, lon = 40.7, 74.006
 
     # Make MDP.
-    solar_mdp = SolarOOMDP(date_time, \
+    solar_mdp = SolarOOMDP(date_time=date_time, \
+        panel=panel, \
         timestep=10.0, \
         latitude_deg=lat, \
         longitude_deg=lon, \
@@ -109,7 +114,8 @@ def _setup_agents(solar_mdp, test_both_axes=False, reflective_index_exp=False):
     else:
         # Regular experiments.
         agents = [sarsa_lin_rbf_agent_d, ql_lin_approx_agent_d, lin_ucb_agent_d]
-        #fixed_agents = [grena_tracker_d_agent, static_agent]
+        fixed_agents = [grena_tracker_d_agent, static_agent]
+        agents = agents + fixed_agents
 
     return agents
 

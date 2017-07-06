@@ -3,7 +3,7 @@ import math as m
 import numpy as np
 
 # Misc. imports.
-from pysolar import solar, radiation
+from Pysolar import solar, radiation
 
 CLOUD_DIFFUS_FACTOR = 1.0 #0.85 # 10% of light is blocked
 
@@ -26,7 +26,7 @@ def _compute_radiation_reflective(time, day, reflective_index, sun_altitude_deg)
     sky_diffus = _compute_sky_diffusion(day)
     rad_direct = _compute_radiation_direct(time, sun_altitude_deg)
     return max(reflective_index * rad_direct * (m.sin(m.radians(sun_altitude_deg)) + sky_diffus), 0.0)
-    
+
 def _compute_sky_diffusion(day):
     return 0.095 * m.sin(0.99*day - 99)
 
@@ -37,7 +37,7 @@ def _compute_direct_cloud_cover(clouds, sun_x, sun_y, img_dims):
     total_sun_light = 0.0
     total_covered_light = 0.0
     sun_x_range = range( int(max(sun_x - sun_dim, 0)), int(min(sun_x + sun_dim, img_dims)))
-    sun_y_range = range( int(max(sun_y - sun_dim, 0)), int(min(sun_y + sun_dim, img_dims))) 
+    sun_y_range = range( int(max(sun_y - sun_dim, 0)), int(min(sun_y + sun_dim, img_dims)))
 
     for i in sun_x_range:
         for j in sun_y_range:
@@ -54,7 +54,7 @@ def _compute_direct_cloud_cover(clouds, sun_x, sun_y, img_dims):
     if total_sun_light > 0 and total_covered_light > 0:
         return float(total_covered_light) / total_sun_light
     return 1.0
-    
+
 
 # --- Tilt Factors ---
 
@@ -89,7 +89,7 @@ def _compute_sun_vector(sun_altitude_deg, sun_azimuth_deg):
     x = m.sin(m.pi - sun_az_radians) * m.cos(sun_alt_radians)
     y = m.cos(m.pi - sun_az_radians) * m.cos(sun_alt_radians)
     z = m.sin(sun_alt_radians)
-    
+
     return _normalize(x, y, z)
 
 def _compute_panel_normal_vector(panel_ns_deg, panel_ew_deg):
