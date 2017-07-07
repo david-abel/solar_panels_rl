@@ -54,16 +54,16 @@ def _make_mdp(loc, percept_type, panel_step, reflective_index=0.5):
         date_time = datetime.datetime(day=1, hour=1, month=2, year=2015)
         lat, lon = 40.7, 74.006
 
+    mode_dict = {'dual_axis':True, 'image_mode':image_mode, 'cloud_mode':cloud_mode}
+
     # Make MDP.
-    solar_mdp = SolarOOMDP(date_time=date_time, \
-        panel=panel, \
-        timestep=10.0, \
-        latitude_deg=lat, \
-        longitude_deg=lon, \
-        panel_step=panel_step, \
-        image_mode=image_mode, \
-        cloud_mode=cloud_mode, \
-        reflective_index=reflective_index)
+    solar_mdp = SolarOOMDP(date_time=date_time,
+                            panel=panel,
+                            timestep=10.0,
+                            latitude_deg=lat,
+                            longitude_deg=lon,
+                            panel_step=panel_step,
+                            mode_dict=mode_dict)
 
     return solar_mdp
 

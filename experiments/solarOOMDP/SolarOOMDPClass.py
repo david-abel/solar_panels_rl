@@ -27,30 +27,41 @@ class SolarOOMDP(OOMDP):
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
-    def __init__(self, panel, date_time, timestep=30, panel_step=.1, reflective_index=0.8, panel_start_angle=0, latitude_deg=40.7, longitude_deg=142.17, img_dims=64, dual_axis=True, image_mode=False, cloud_mode=False):
+    def __init__(self,
+                panel,
+                date_time,
+                timestep=30,
+                panel_step=.1,
+                reflective_index=0.8,
+                panel_start_angle=0,
+                latitude_deg=40.7,
+                longitude_deg=142.17,
+                img_dims=64,
+                mode_dict = {'dual_axis':True, 'image_mode':False, 'cloud_mode':False}):
 
-        # Error check the lat/long.
+                # Error check the lat/long.
         if abs(latitude_deg) > 90 or abs(longitude_deg) > 180:
             print "Error: latitude must be between [-90, 90], longitude between [-180,180]. Lat:", latitude_deg, "Long:", longitude_deg
             quit()
 
-        if cloud_mode and not image_mode:
+        if mode_dict['cloud_mode'] and not image_mode:
             print "Warning (SolarOOMDP): Clouds were set to active but image mode is off. No cloud simulation supported for non-image-mode."
-            cloud_mode = False
+            mode_dict['cloud_mode'] = False
 
         # Mode information
-        # If we are in 1-axis tracking mode, change actions accordingly.
-        if not(dual_axis):
-            SolarOOMDP.ACTIONS = get_single_axis_actions()
-
-        #get panel information.
-        self.panel = panel
+        if not(mode_dict['dual_axis']):
+            # If we are in 1-axis tracking mode, change actions accordingly.
+            SolarOOMDP.ACTIONS = self.get_single_axis_actions()
 
         # Image stuff.
         self.img_dims = 16
-        self.image_mode = image_mode
-        self.cloud_mode = cloud_mode
-        self.clouds = self._generate_clouds() if cloud_mode else []
+        self.image_mode = mode_dict['image_mode']
+        self.cloud_mode = mode_dict['cloud_mode']
+        self.clouds = self._generate_clouds() if mode_dict['cloud_mode'] else []
+
+        #get panel information.
+        self.panel = panel
+        self.sqrt_num_panels = 1 # Assume only 1 panel for now.
 
         # Global information
         self.latitude_deg = latitude_deg # positive in the northern hemisphere
@@ -64,7 +75,8 @@ class SolarOOMDP(OOMDP):
         self.time = date_time
 
         # Make state and call super.
-        init_state = self._create_state(0.0, 0.0, self.init_time, longitude_deg, latitude_deg)
+        panels = self._get_default_panel_obj_list()
+        init_state = self._create_state(panels, self.init_time)
         OOMDP.__init__(self, SolarOOMDP.ACTIONS, self.objects, self._transition_func, self._reward_func, init_state=init_state)
 
     def reset(self):
@@ -74,6 +86,17 @@ class SolarOOMDP(OOMDP):
         '''
         self.time = self.init_time
         OOMDP.reset(self)
+
+    def _get_default_panel_obj_list(self):
+        panels = []
+        for i in xrange(self.sqrt_num_panels**2):
+            # Make panel object.
+            panel_attributes = {}
+            panel_attributes["angle_ew"] = 0.0
+            panel_attributes["angle_ns"] = 0.0
+            panel = OOMDPObject(attributes=panel_attributes, name="panel_" + str(i))
+            panels.append(panel)
+        return panels
 
     def _get_day(self):
         return self.time.timetuple().tm_yday
@@ -144,26 +167,24 @@ class SolarOOMDP(OOMDP):
         panel_ew_deg = state.get_panel_angle_ns()
 
         if action is "optimal":
-            # compute optimal reward
+            # Compute optimal reward.
             reward = self._compute_optimal_reward(sun_altitude_deg, sun_azimuth_deg)
 
         else:
             flux = self._compute_flux(sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg)
-            #compute electrical power output of panel for given flux
+            # Compute electrical power output of panel for given flux.
             power = self.panel.get_power(flux)
-            # convert timestep to seconds
-            energy = power*self.timestep*60 # Joules
 
+            # Convert timestep to seconds.
+            energy = power*self.timestep*60 # Joules
 
             cost = 0 # in Joules
 
-            #get cost of motion
+            # Get cost of motion.
             if action == "panel_forward_ew" or action == "panel_back_ew":
                 cost = self.panel.get_rotation_energy_for_axis('ew', np.radians(panel_ew_deg), np.radians(self.panel_step))
             elif action == "panel_forward_ns" or action == "panel_back_ns":
                 cost = self.panel.get_rotation_energy_for_axis('ns', np.radians(panel_ns_deg), np.radians(self.panel_step))
-
-            print "energy collected during timestep: {} cost of action {}: {}".format(energy, action, cost)
 
             reward = energy - cost
 
@@ -215,6 +236,28 @@ class SolarOOMDP(OOMDP):
 
         return optimal_reward
 
+    def _create_moved_panel(self, state, action, panel_index):
+        panel_angle_ew = state.get_panel_angle_ew(panel_index=panel_index)
+        panel_angle_ns = state.get_panel_angle_ns(panel_index=panel_index)
+
+        # Compute new angles
+        ew_step, ns_step = {"panel_forward_ew": (self.panel_step, 0),
+                            "panel_forward_ns": (0, self.panel_step),
+                            "panel_back_ew": (-self.panel_step, 0),
+                            "panel_back_ns": (0, self.panel_step),
+                            "do_nothing": (0, 0)}[action]
+        new_panel_angle_ew, new_panel_angle_ns = panel_angle_ew + ew_step, panel_angle_ns + ns_step
+        bounded_panel_angle_ew = max(min(new_panel_angle_ew, 90), -90)
+        bounded_panel_angle_ns = max(min(new_panel_angle_ns, 90), -90)
+
+        # Make panel object.
+        panel_attributes = {}
+        panel_attributes["angle_ew"] = bounded_panel_angle_ew
+        panel_attributes["angle_ns"] = bounded_panel_angle_ns
+        panel = OOMDPObject(attributes=panel_attributes, name="panel_" + str(panel_index))
+
+        return panel
+
     def _transition_func(self, state, action):
         '''
         Args:
@@ -226,79 +269,46 @@ class SolarOOMDP(OOMDP):
         '''
         self._error_check(state, action)
         self.time += datetime.timedelta(minutes=self.timestep)
-        state_angle_ns = state.get_panel_angle_ns()
-        state_angle_ew = state.get_panel_angle_ew()
-
 
         # Remake or move clouds.
-        if (self.time.hour == 1) and self.time.minute == 0:
+        if self.time.hour == 1 and self.time.minute == 0:
             self.clouds = self._generate_clouds() if self.cloud_mode else []
         elif self.clouds != []:
             self._move_clouds()
 
+        # If we're computing optimal-greedy behavior, the new state is irrelevent (we search over all anyway).
+        if action == "optimal":
+            return self._create_state(state_angle_ew, state_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
+
+        # Move all panels.
         step = self.panel_step
+        new_panels = []
+        for i in xrange(self.sqrt_num_panels**2):
 
-        # If we move the panel forward, increment panel angle by one step
-        if action == "panel_forward_ew":
-            new_panel_angle_ew = state_angle_ew + step
-            return self._create_state(new_panel_angle_ew, state_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
+            next_panel = self._create_moved_panel(state, action, panel_index=i)
 
-        # If we move the panel back, decrement panel angle by one step
-        elif action == "panel_back_ew":
-            new_panel_angle_ew = state_angle_ew - step
-            return self._create_state(new_panel_angle_ew, state_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
+            new_panels.append(next_panel)
 
-        # If we move the panel forward, increment panel angle by one step
-        if action == "panel_forward_ns":
-            new_panel_angle_ns = state_angle_ns + step
-            return self._create_state(state_angle_ew, new_panel_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
+        next_state = self._create_state(new_panels, self.time)
 
-        # If we move the panel back, decrement panel angle by one step
-        elif action == "panel_back_ns":
-            new_panel_angle_ns = state_angle_ns - step
-            return self._create_state(state_angle_ew, new_panel_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
+        return next_state
 
-        # If we do nothing, none of the angles change
-        elif action == "do_nothing":
-            return self._create_state(state_angle_ew, state_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
-
-        # If the action is optimal, the new state is irrelevent
-        elif action == "optimal":
-            return self._create_state(state_angle_ew, state_angle_ns, self.time, self.longitude_deg, self.latitude_deg)
-
-        else:
-            print "Error: Unrecognized action! (" + action + ")"
-            quit()
-
-    def _create_state(self, panel_angle_ew, panel_angle_ns, t, lon, lat):
+    def _create_state(self, panels, time):
         '''
         Args:
-            sun_angle (int)
-            panel_angle_ns (int)
-            panel_angle_ew (int)
-            t (datetime)
-            lon (float)
-            lat (float)
+            panels (list): Contains attribute dictionaries for panel objects.
+            time (datetime)
 
         Returns:
-            (OOMDP State)
+            (SolarOOMDPState)
         '''
         self.objects = {attr : [] for attr in SolarOOMDP.CLASSES}
-
-        # Make agent.
-        agent_attributes = {}
-        bounded_panel_angle_ew = max(min(panel_angle_ew,90),-90)
-        bounded_panel_angle_ns = max(min(panel_angle_ns,90),-90)
-        agent_attributes["angle_ew"] = bounded_panel_angle_ew
-        agent_attributes["angle_ns"] = bounded_panel_angle_ns
-
-        agent = OOMDPObject(attributes=agent_attributes, name="agent")
-        self.objects["agent"].append(agent)
+        self.objects["panel"] = panels
 
         # Sun.
         sun_attributes = {}
-        sun_angle_AZ = sh._compute_sun_azimuth(lat, lon, t)
-        sun_angle_ALT = sh._compute_sun_altitude(lat, lon, t)
+        sun_angle_AZ = sh._compute_sun_azimuth(self.latitude_deg, self.longitude_deg, time)
+        sun_angle_ALT = sh._compute_sun_altitude(self.latitude_deg, self.longitude_deg, time)
         
         # Image stuff.
         if self.image_mode:
@@ -315,8 +325,8 @@ class SolarOOMDP(OOMDP):
         sun = OOMDPObject(attributes=sun_attributes, name="sun")
         self.objects["sun"].append(sun)
 
-        return SolarOOMDPState(self.objects, date_time=t, longitude=lon, latitude=lat, sun_angle_AZ = sun_angle_AZ, sun_angle_ALT = sun_angle_ALT)
-    
+        return SolarOOMDPState(self.objects, date_time=time, longitude=self.longitude_deg, latitude=self.latitude_deg, sun_angle_AZ = sun_angle_AZ, sun_angle_ALT = sun_angle_ALT)
+
     # -------------------
     # --- IMAGE STUFF ---
     # -------------------
