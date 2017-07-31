@@ -23,7 +23,7 @@ class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
 
     # Static constants., 
-    ACTIONS = ["panel_forward_ns", "panel_back_ns", "do_nothing", "panel_forward_ew", "panel_back_ew"]
+    ACTIONS = ["panel_forward_ns", "panel_back_ns", "do_nothing"] #, "panel_forward_ew", "panel_back_ew"]
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
@@ -32,7 +32,7 @@ class SolarOOMDP(OOMDP):
                 date_time,
                 timestep=30,
                 panel_step=.1,
-                reflective_index=0.8,
+                reflective_index=0.25,
                 panel_start_angle=0,
                 latitude_deg=40.7,
                 longitude_deg=142.17,
@@ -44,7 +44,7 @@ class SolarOOMDP(OOMDP):
             print "Error: latitude must be between [-90, 90], longitude between [-180,180]. Lat:", latitude_deg, "Long:", longitude_deg
             quit()
 
-        if mode_dict['cloud_mode'] and not image_mode:
+        if mode_dict['cloud_mode'] and not mode_dict['image_mode']:
             print "Warning (SolarOOMDP): Clouds were set to active but image mode is off. No cloud simulation supported for non-image-mode."
             mode_dict['cloud_mode'] = False
 
@@ -126,7 +126,7 @@ class SolarOOMDP(OOMDP):
         clouds = []
 
         # Generate info for each cloud.
-        dx, dy = 1, 0 #random.randint(-1,1), random.randint(-1,1)
+        dx, dy = 1, 0
         for i in xrange(num_clouds):
             x = random.randint(0, self.img_dims)
             y = random.randint(0, self.img_dims)
@@ -177,26 +177,19 @@ class SolarOOMDP(OOMDP):
 
             # Convert timestep to seconds.
             energy = power*self.timestep*60 # Joules
-
             cost = 0 # in Joules
 
             # Get cost of motion.
-            if action == "panel_forward_ew" or action == "panel_back_ew":
+            if "ew" in action:
                 cost = self.panel.get_rotation_energy_for_axis('ew', np.radians(panel_ew_deg), np.radians(self.panel_step))
-            elif action == "panel_forward_ns" or action == "panel_back_ns":
+            elif "ns" in action:
                 cost = self.panel.get_rotation_energy_for_axis('ns', np.radians(panel_ns_deg), np.radians(self.panel_step))
 
             reward = energy - cost
 
-        return reward
+        return (reward) / 1000000.0 # Convert Watts to Megawatts
 
-    def _compute_flux(self, sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg):
-        # Cloud stuff.
-        direct_cloud_modifer = 1.0
-        if self.cloud_mode:
-            sun_x, sun_y = self._get_sun_x_y(sun_azimuth_deg, sun_altitude_deg)
-            direct_cloud_modifer = sh._compute_direct_cloud_cover(self.clouds, sun_x, sun_y, self.img_dims)
-        
+    def _compute_flux(self, sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg):        
         # Compute direct radiation.
         direct_rads = sh._compute_radiation_direct(self.time, sun_altitude_deg)
         diffuse_rads = sh._compute_radiation_diffuse(self.time, self._get_day(), sun_altitude_deg)
@@ -208,7 +201,7 @@ class SolarOOMDP(OOMDP):
         reflective_tilt_factor = sh._compute_reflective_radiation_tilt_factor(panel_ns_deg, panel_ew_deg)
 
         # Compute total.
-        flux = direct_cloud_modifer * direct_rads * direct_tilt_factor + \
+        flux = direct_rads * direct_tilt_factor + \
                     diffuse_rads * diffuse_tilt_factor + \
                     reflective_rads * reflective_tilt_factor
 
@@ -247,8 +240,8 @@ class SolarOOMDP(OOMDP):
                             "panel_back_ns": (0, self.panel_step),
                             "do_nothing": (0, 0)}[action]
         new_panel_angle_ew, new_panel_angle_ns = panel_angle_ew + ew_step, panel_angle_ns + ns_step
-        bounded_panel_angle_ew = max(min(new_panel_angle_ew, 90), -90)
-        bounded_panel_angle_ns = max(min(new_panel_angle_ns, 90), -90)
+        bounded_panel_angle_ew = max(min(new_panel_angle_ew, 70), -70)
+        bounded_panel_angle_ns = max(min(new_panel_angle_ns, 70), -70)
 
         # Make panel object.
         panel_attributes = {}
@@ -312,6 +305,9 @@ class SolarOOMDP(OOMDP):
         
         # Image stuff.
         if self.image_mode:
+            # Grab image relative to first image for now.
+            bounded_panel_angle_ew = max(min(panels[0]["angle_ew"], 90), -90)
+            bounded_panel_angle_ns = max(min(panels[0]["angle_ns"], 90), -90)
             # Set attributes as pixels.
             image = self._create_sun_image(sun_angle_AZ, sun_angle_ALT, bounded_panel_angle_ns, bounded_panel_angle_ew)
             for i in range (self.img_dims):

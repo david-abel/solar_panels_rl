@@ -3,8 +3,16 @@
 import numpy as np
 
 class Panel():
-    def __init__(self, x_dim, y_dim, mass, efficiency, actuator_force,
-                 actuator_offset_ew, actuator_mount_ew, actuator_offset_ns, actuator_mount_ns):
+    def __init__(self,
+                    x_dim,
+                    y_dim,
+                    mass,
+                    efficiency,
+                    actuator_force,
+                    actuator_offset_ew,
+                    actuator_mount_ew,
+                    actuator_offset_ns,
+                    actuator_mount_ns):
         '''
         :param x_dim: length of panel (meters)
         :param y_dim: width of panel (meters)

@@ -3,7 +3,7 @@ import math as m
 import numpy as np
 
 # Misc. imports.
-from Pysolar import solar, radiation
+from pysolar import solar, radiation
 
 
 def _compute_sun_altitude(latitude_deg, longitude_deg, time):
