@@ -23,7 +23,7 @@ class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
 
     # Static constants., 
-    ACTIONS = ["panel_forward_ns", "panel_back_ns", "do_nothing"] #, "panel_forward_ew", "panel_back_ew"]
+    ACTIONS = ["panel_forward_ns", "panel_back_ns", "do_nothing" , "panel_forward_ew", "panel_back_ew"]
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
@@ -179,11 +179,17 @@ class SolarOOMDP(OOMDP):
             energy = power*self.timestep*60 # Joules
             cost = 0 # in Joules
 
+            #print panel_ew_deg, panel_ns_deg
+
             # Get cost of motion.
             if "ew" in action:
                 cost = self.panel.get_rotation_energy_for_axis('ew', np.radians(panel_ew_deg), np.radians(self.panel_step))
             elif "ns" in action:
                 cost = self.panel.get_rotation_energy_for_axis('ns', np.radians(panel_ns_deg), np.radians(self.panel_step))
+
+
+            #print "energy: {} cost:{} ".format(energy, cost)
+            #print "cost: {}".format(cost)
 
             reward = energy - cost
 

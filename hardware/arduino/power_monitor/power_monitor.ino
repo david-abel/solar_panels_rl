@@ -2,10 +2,16 @@
 //constants for voltage divider measurement.
 const float R1 = 1000000.0;
 const float R2 = 100000.0;
-const float VREF = 5.0;
-float readVoltage;
-float measuredVoltage;
-float current;
+const float VREF = 5.0; //V, technically only valid if using external power source, USB power is ~4.83
+float readVoltage; //V
+float measuredVoltage; //V
+float current; //A
+float power; //W
+
+//use serial plotter or serial monitor
+//plotter is kind of useless b/c different units, tbh
+//maybe use Simulink or something
+bool usePlotter = false;
 
 //eqn for current across output pins: 
 //I = (V*(1k ohm))/(R_s * R_l) where R_s = shunt resistor value and r_l = load resistor value
@@ -34,15 +40,40 @@ void loop() {
   // put your main code here, to run repeatedly:
 
   current = readingToVoltage(analogRead(A_PIN));
-  Serial.print("Current: ");
+
+  //using Serial plotter
+
   Serial.print(current, 3);
-  Serial.print(" A ");
+  if (!usePlotter){
+    Serial.print(" A ");
+  } else{
+    Serial.print("\t"); 
+  }
+  
+  
 
   measuredVoltage = voltageDivider(readingToVoltage(analogRead(V_PIN)));
-  Serial.print("Voltage: ");
+  
   Serial.print(measuredVoltage, 3);
-  Serial.println(" V");
 
+  if (!usePlotter){
+    Serial.print(" V ");
+  } else{
+    Serial.print("\t"); 
+  }
+  
+  
+  
+
+  power = current*measuredVoltage;
+
+  Serial.print(power);
+
+  if (!usePlotter){
+    Serial.println(" W");
+  } else{
+    Serial.println("");
+  }
   
   
 
