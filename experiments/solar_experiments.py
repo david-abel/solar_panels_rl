@@ -10,7 +10,7 @@ import datetime
 
 # simple_rl imports.
 from simple_rl.run_experiments import run_agents_on_mdp
-from simple_rl.agents import RandomAgent, FixedPolicyAgent, LinearApproxQLearnerAgent, LinearApproxSarsaAgent, LinUCBAgent
+from simple_rl.agents import RandomAgent, FixedPolicyAgent, LinearQLearnerAgent, LinearApproxSarsaAgent, LinUCBAgent
 
 # Local imports.
 from solarOOMDP.SolarOOMDPClass import SolarOOMDP
@@ -29,7 +29,6 @@ def _make_mdp(loc, percept_type, panel_step, reflective_index=0.5):
         (solarOOMDP)
     '''
     #panel information
-    #TODO: check actuator force - how does it scale with panel mass?
     panel = Panel(1, 1, 10, 0.22, 1500, 0.10, 0.5, 0.1, 0.5)
     
     # Percepts.
@@ -45,7 +44,7 @@ def _make_mdp(loc, percept_type, panel_step, reflective_index=0.5):
 
     # Location.
     if loc == "australia":
-        date_time = datetime.datetime(day=1, hour=1, month=1, year=2015)
+        date_time = datetime.datetime(day=1, hour=1, month=6, year=2015)
         lat, lon = -34.25, 142.17
     elif loc == "iceland":
         date_time = datetime.datetime(day=3, hour=16, month=7, year=2020)
@@ -67,7 +66,7 @@ def _make_mdp(loc, percept_type, panel_step, reflective_index=0.5):
 
     return solar_mdp
 
-def _setup_agents(solar_mdp, test_both_axes=False):
+def _setup_agents(solar_mdp):
     '''
     Args:
         solar_mdp (SolarOOMDP)
@@ -77,25 +76,26 @@ def _setup_agents(solar_mdp, test_both_axes=False):
     '''
     # Get relevant MDP params.
     actions, gamma, panel_step = solar_mdp.get_actions(), solar_mdp.get_gamma(), solar_mdp.get_panel_step()
-    saxis_actions = solar_mdp.get_single_axis_actions()
 
     # Setup fixed agent.
     static_agent = FixedPolicyAgent(tb.static_policy, name="fixed-panel")
     optimal_agent = FixedPolicyAgent(tb.optimal_policy, name="optimal")
 
     # Grena single axis and double axis trackers from time/loc.
-    grena_tracker = SolarTracker(tb.grena_tracker, panel_step=panel_step, dual_axis=False)
+    grena_tracker = SolarTracker(tb.grena_tracker, panel_step=panel_step, dual_axis=True)
     grena_tracker_agent = FixedPolicyAgent(grena_tracker.get_policy(), name="grena-tracker")
 
     # Setup RL agents
-    alpha, epsilon = 0.3, 0.7
+    alpha, epsilon = 0.2, 0.2
+    num_features = solar_mdp.get_num_state_feats()
     lin_ucb_agent = LinUCBAgent(actions, name="lin-ucb") #, alpha=0.2) #, alpha=0.2)
-    ql_lin_approx_agent_g0 = LinearApproxQLearnerAgent(actions, name="ql-lin-g0", alpha=alpha, epsilon=epsilon, gamma=0, rbf=True, anneal=True)
-    ql_lin_approx_agent = LinearApproxQLearnerAgent(actions, name="ql-lin", alpha=alpha, epsilon=epsilon, gamma=gamma, rbf=True, anneal=True)
-    sarsa_lin_rbf_agent = LinearApproxSarsaAgent(actions, name="sarsa-lin", alpha=alpha, epsilon=epsilon, gamma=gamma, rbf=True, anneal=True)
+    ql_lin_approx_agent_g0 = LinearQLearnerAgent(actions, num_features=num_features, name="ql-lin-g0", alpha=alpha, epsilon=epsilon, gamma=0, rbf=True, anneal=False)
+    ql_lin_approx_agent = LinearQLearnerAgent(actions, num_features=num_features, name="ql-lin", alpha=alpha, epsilon=epsilon, gamma=gamma, rbf=True, anneal=False)
+    # sarsa_lin_rbf_agent = LinearApproxSarsaAgent(actions, name="sarsa-lin", alpha=alpha, epsilon=epsilon, gamma=gamma, rbf=True, anneal=False)
     random_agent = RandomAgent(actions)
+    
     # Regular experiments.
-    agents = [sarsa_lin_rbf_agent, ql_lin_approx_agent, lin_ucb_agent, grena_tracker_agent, static_agent]
+    agents = [ql_lin_approx_agent, grena_tracker_agent, static_agent]
 
     return agents
 
@@ -120,12 +120,12 @@ def setup_experiment(percept_type, loc="australia"):
 def main():
 
     # Setup experiment parameters, agents, mdp.
-    num_days = 1
-    loc, steps = "iceland", 6*24*num_days
+    num_days = 10
+    loc, steps = "australia", 6*24*num_days
     sun_agents, sun_solar_mdp = setup_experiment("sun_percept", loc=loc)
 
     # # Run experiments.
-    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=5, episodes=100, steps=steps, clear_old_results=True, rew_step_count=6*24)
+    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=3, episodes=100, steps=steps, clear_old_results=True, rew_step_count=6*24)
 
     
 if __name__ == "__main__":

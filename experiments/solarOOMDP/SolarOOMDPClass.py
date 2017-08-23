@@ -23,7 +23,7 @@ class SolarOOMDP(OOMDP):
     ''' Class for a Solar OO-MDP '''
 
     # Static constants., 
-    ACTIONS = ["panel_forward_ns", "panel_back_ns", "do_nothing"] #, "panel_forward_ew", "panel_back_ew"]
+    ACTIONS = ["panel_forward_ns", "panel_back_ns", "do_nothing", "panel_forward_ew", "panel_back_ew"]
     ATTRIBUTES = ["angle_AZ", "angle_ALT", "angle_ns", "angle_ew"]
     CLASSES = ["agent", "sun", "time", "worldPosition"]
 
@@ -36,7 +36,7 @@ class SolarOOMDP(OOMDP):
                 panel_start_angle=0,
                 latitude_deg=40.7,
                 longitude_deg=142.17,
-                img_dims=64,
+                img_dims=16,
                 mode_dict = {'dual_axis':True, 'image_mode':False, 'cloud_mode':False}):
 
                 # Error check the lat/long.
@@ -54,7 +54,7 @@ class SolarOOMDP(OOMDP):
             SolarOOMDP.ACTIONS = self.get_single_axis_actions()
 
         # Image stuff.
-        self.img_dims = 16
+        self.img_dims = img_dims
         self.image_mode = mode_dict['image_mode']
         self.cloud_mode = mode_dict['cloud_mode']
         self.clouds = self._generate_clouds() if mode_dict['cloud_mode'] else []
@@ -172,6 +172,7 @@ class SolarOOMDP(OOMDP):
 
         else:
             flux = self._compute_flux(sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg)
+            
             # Compute electrical power output of panel for given flux.
             power = self.panel.get_power(flux)
 
@@ -186,6 +187,8 @@ class SolarOOMDP(OOMDP):
                 cost = self.panel.get_rotation_energy_for_axis('ns', np.radians(panel_ns_deg), np.radians(self.panel_step))
 
             reward = energy - cost
+
+            # print reward, energy, cost, action
 
         return (reward) / 1000000.0 # Convert Watts to Megawatts
 
@@ -204,6 +207,12 @@ class SolarOOMDP(OOMDP):
         flux = direct_rads * direct_tilt_factor + \
                     diffuse_rads * diffuse_tilt_factor + \
                     reflective_rads * reflective_tilt_factor
+
+        # print "dir, diff, ref", direct_rads, diffuse_rads, reflective_rads
+        # print "\t", direct_tilt_factor, diffuse_tilt_factor, reflective_tilt_factor
+        # print
+
+        # print round(direct_rads * direct_tilt_factor, 2), round(diffuse_rads * diffuse_tilt_factor, 2), round(reflective_rads * reflective_tilt_factor,2)
 
         return flux
 
@@ -283,6 +292,8 @@ class SolarOOMDP(OOMDP):
             new_panels.append(next_panel)
 
         next_state = self._create_state(new_panels, self.time)
+
+        next_state.update()
 
         return next_state
 
