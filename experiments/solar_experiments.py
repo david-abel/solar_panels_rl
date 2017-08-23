@@ -29,7 +29,19 @@ def _make_mdp(loc, percept_type, panel_step, reflective_index=0.5):
         (solarOOMDP)
     '''
     #panel information
-    panel = Panel(1, 1, 10, 0.22, 1500, 0.10, 0.5, 0.1, 0.5)
+
+    panel = Panel(x_dim=1,
+                  y_dim=1,
+                  assembly_mass=15, #kg
+                  COM_offset=0.1, #meters
+                  bearing_friction=0.1, #coeff of friction, totally made up
+                  efficiency=0.9,
+                  offset_angle=0.25, #radians
+                  actuator_force=1500,#TODO: remove, not used
+                  actuator_offset_ew=0.1,
+                  actuator_mount_ew=0.5,
+                  actuator_offset_ns=0.1,
+                  actuator_mount_ns=0.5)
     
     # Percepts.
     try:
@@ -125,7 +137,7 @@ def main():
     sun_agents, sun_solar_mdp = setup_experiment("sun_percept", loc=loc)
 
     # # Run experiments.
-    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=3, episodes=100, steps=steps, clear_old_results=True, rew_step_count=6*24)
+    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=3, episodes=100, steps=steps, clear_old_results=True) #, rew_step_count=6*24)
 
     
 if __name__ == "__main__":
