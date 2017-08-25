@@ -10,7 +10,7 @@ import datetime
 
 # simple_rl imports.
 from simple_rl.run_experiments import run_agents_on_mdp
-from simple_rl.agents import RandomAgent, FixedPolicyAgent, LinearApproxQLearnerAgent, LinearApproxSarsaAgent, LinUCBAgent
+from simple_rl.agents import RandomAgent, FixedPolicyAgent, LinearQLearnerAgent, LinearApproxSarsaAgent, LinUCBAgent
 
 # Local imports.
 from solarOOMDP.SolarOOMDPClass import SolarOOMDP
@@ -27,7 +27,25 @@ def _make_mdp(loc, percept_type, panel_step, reflective_index=0.5):
     Returns:
         (solarOOMDP)
     '''
+<<<<<<< HEAD
 
+=======
+    #panel information
+
+    panel = Panel(x_dim=1,
+                  y_dim=1,
+                  assembly_mass=15, #kg
+                  COM_offset=0.1, #meters
+                  bearing_friction=0.1, #coeff of friction, totally made up
+                  efficiency=0.9,
+                  offset_angle=0.25, #radians
+                  actuator_force=1500,#TODO: remove, not used
+                  actuator_offset_ew=0.1,
+                  actuator_mount_ew=0.5,
+                  actuator_offset_ns=0.1,
+                  actuator_mount_ns=0.5)
+
+>>>>>>> 008c9d88bf9c6fee3f29b79302f85c45bc4f495e
     # Percepts.
     try:
         image_mode, cloud_mode, = {
@@ -41,7 +59,7 @@ def _make_mdp(loc, percept_type, panel_step, reflective_index=0.5):
 
     # Location.
     if loc == "australia":
-        date_time = datetime.datetime(day=1, hour=1, month=1, year=2015)
+        date_time = datetime.datetime(day=1, hour=1, month=6, year=2015)
         lat, lon = -34.25, 142.17
     elif loc == "iceland":
         date_time = datetime.datetime(day=3, hour=16, month=7, year=2020)
@@ -62,7 +80,11 @@ def _make_mdp(loc, percept_type, panel_step, reflective_index=0.5):
 
     return solar_mdp
 
+<<<<<<< HEAD
 def _setup_agents(solar_mdp, test_both_axes=False, reflective_index_exp=False):
+=======
+def _setup_agents(solar_mdp):
+>>>>>>> 008c9d88bf9c6fee3f29b79302f85c45bc4f495e
     '''
     Args:
         solar_mdp (SolarOOMDP)
@@ -73,7 +95,6 @@ def _setup_agents(solar_mdp, test_both_axes=False, reflective_index_exp=False):
     '''
     # Get relevant MDP params.
     actions, gamma, panel_step = solar_mdp.get_actions(), solar_mdp.get_gamma(), solar_mdp.get_panel_step()
-    saxis_actions = solar_mdp.get_single_axis_actions()
 
     # Setup fixed agent.
     static_agent = FixedPolicyAgent(tb.static_policy, name="fixed-panel")
@@ -142,9 +163,14 @@ def setup_experiment(percept_type, loc="australia", test_both_axes=False, reflec
 def main():
 
     # Setup experiment parameters, agents, mdp.
+<<<<<<< HEAD
     # loc, steps = "australia", 20*24*4
     # loc, steps = "nyc", 20*24*10
     loc, steps = "nyc", 6*24
+=======
+    num_days = 10
+    loc, steps = "australia", 6*24*num_days
+>>>>>>> 008c9d88bf9c6fee3f29b79302f85c45bc4f495e
     sun_agents, sun_solar_mdp = setup_experiment("sun_percept", loc=loc)
     img_agents, img_solar_mdp = setup_experiment("image_percept", loc=loc) #, reflective_index_exp=True)
     img_cloud_agents, img_cloud_solar_mdp = setup_experiment("image_cloud_percept", loc=loc) # reflective_index=0.1)
@@ -154,6 +180,7 @@ def main():
     # run_agents_on_mdp(daxis_agents, daxis_mdp, num_instances=5, num_episodes=1, num_steps=20*24*5, clear_old_results=True)
 
     # # Run experiments.
+<<<<<<< HEAD
     run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=10, episodes=1, steps=steps, clear_old_results=True)
     # run_agents_on_mdp(img_agents, img_solar_mdp, num_instances=10, num_episodes=1, num_steps=steps, clear_old_results=False)
     # run_agents_on_mdp(img_cloud_agents, img_cloud_solar_mdp, num_instances=5, num_episodes=1, num_steps=steps, clear_old_results=False)
@@ -163,6 +190,9 @@ def main():
     # run_agents_on_mdp(deterministic_agents, img_solar_mdp, num_instances=1, num_episodes=1, num_steps=steps, clear_old_results=False)
     # run_agents_on_mdp(img_cloud_agents, img_cloud_solar_mdp, num_instances=10, num_episodes=1, num_steps=steps, clear_old_results=False)
 
+=======
+    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=3, episodes=100, steps=steps, clear_old_results=True) #, rew_step_count=6*24)
+>>>>>>> 008c9d88bf9c6fee3f29b79302f85c45bc4f495e
 
 if __name__ == "__main__":
     main()
