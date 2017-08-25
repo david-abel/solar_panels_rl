@@ -20,6 +20,9 @@ bool usePlotter = false;
 
 //notes (from SparkFun tutorial)
 //make sure ground of measurement circuit is connected to ground of INA169 board. 
+//For solar panel
+//const int A_PIN = A3;
+//const int V_PIN = A2;
 
 const int A_PIN = A1;
 const int V_PIN = A0;
