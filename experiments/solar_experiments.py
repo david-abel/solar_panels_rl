@@ -14,8 +14,8 @@ from simple_rl.agents import RandomAgent, FixedPolicyAgent, LinearQLearnerAgent,
 
 # Local imports.
 from solarOOMDP.SolarOOMDPClass import SolarOOMDP
-from solarOOMDP.PanelClass import Panel
 from SolarTrackerClass import SolarTracker
+from solarOOMDP.PanelClass import Panel
 import tracking_baselines as tb
 
 def _make_mdp(loc, percept_type, panel_step, time_per_step=15.0):
@@ -30,7 +30,6 @@ def _make_mdp(loc, percept_type, panel_step, time_per_step=15.0):
         (solarOOMDP)
     '''
     #panel information
-
     panel = Panel(x_dim=1,
                   y_dim=1,
                   assembly_mass=15, #kg
@@ -43,7 +42,7 @@ def _make_mdp(loc, percept_type, panel_step, time_per_step=15.0):
                   actuator_mount_ew=0.5,
                   actuator_offset_ns=0.1,
                   actuator_mount_ns=0.5)
-    
+
     # Percepts.
     try:
         image_mode, cloud_mode, = {
@@ -135,10 +134,11 @@ def setup_experiment(percept_type, loc="australia", panel_step=2.0, time_per_ste
     
     return agents, solar_mdp
 
+
 def main():
 
     # Setup experiment parameters, agents, mdp.
-    num_days = 1
+    num_days = 3
     per_hour = False
     time_per_step = 20.0 # in minutes.
     loc, steps = "nola", int(24*(60 / time_per_step)*num_days)
@@ -149,8 +149,8 @@ def main():
     sun_agents, sun_solar_mdp = setup_experiment("sun_percept", loc=loc, panel_step=panel_step, time_per_step=time_per_step)
 
     # # Run experiments.
-    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=5, episodes=100, steps=steps, clear_old_results=True, rew_step_count=rew_step_count, verbose=False)
+    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=5, episodes=1, steps=steps, clear_old_results=True, rew_step_count=rew_step_count, verbose=False)
 
-    
+
 if __name__ == "__main__":
     main()
