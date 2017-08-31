@@ -1,8 +1,10 @@
 
 //constants for voltage divider measurement.
-const float R1 = 1000000.0;
-const float R2 = 100000.0;
-const float VREF = 5.0; //V, technically only valid if using external power source, USB power is ~4.83
+//const float R1 = 1000000.0;
+//const float R2 = 100000.0;
+const float R1 = 1010000.0;
+const float R2 = 99700.0;
+const float VREF = 4.88; //V, technically only valid if using external power source, USB power is ~4.83
 float readVoltage; //V
 float measuredVoltage; //V
 float current; //A
@@ -21,11 +23,11 @@ bool usePlotter = false;
 //notes (from SparkFun tutorial)
 //make sure ground of measurement circuit is connected to ground of INA169 board. 
 //For solar panel
-//const int A_PIN = A3;
-//const int V_PIN = A2;
+const int A_PIN = A3;
+const int V_PIN = A2;
 
-const int A_PIN = A1;
-const int V_PIN = A0;
+//const int A_PIN = A1;
+//const int V_PIN = A0;
 
 void setup() {
   Serial.begin(9600);
@@ -46,16 +48,17 @@ void loop() {
 
   //using Serial plotter
 
-  Serial.print(current, 3);
-  if (!usePlotter){
-    Serial.print(" A ");
-  } else{
-    Serial.print("\t"); 
-  }
-  
+//  Serial.print(current, 3);
+//  if (!usePlotter){
+//    Serial.print(" A ");
+//  } else{
+//    Serial.print("\t"); 
+//  }
+//  
   
 
   measuredVoltage = voltageDivider(readingToVoltage(analogRead(V_PIN)));
+//  measuredVoltage = readingToVoltage(analogRead(V_PIN));
   
   Serial.print(measuredVoltage, 3);
 
