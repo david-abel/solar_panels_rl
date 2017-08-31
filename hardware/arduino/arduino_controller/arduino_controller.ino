@@ -52,18 +52,6 @@ float getActuatorPower(){
   return current*measuredVoltage;
 }
 
-static int MAX_READINGS = 100;
-
-int powerReadings[MAX_READINGS];
-
-/*
- * collects power readings for the specified duration. 
- */
-float measurePowerForDuration(String device, int duration, int timeStep){
-  
-}
-
-
 void setup() {
   // set pinMode to high, to prevent motion
   pinMode(FORWARD_PIN, OUTPUT);
