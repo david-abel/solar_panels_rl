@@ -330,7 +330,7 @@ class SolarOOMDP(OOMDP):
             for i in range (self.img_dims):
                 for j in range (self.img_dims):
                     idx = i*self.img_dims + j
-                    sun_attributes['pix' + str(i)] = image[i][j]    
+                    sun_attributes['pix' + str(idx)] = image[i][j]    
         else:
             sun_attributes["angle_AZ"] = sun_angle_AZ
             sun_attributes["angle_ALT"] = sun_angle_ALT  
