@@ -34,7 +34,7 @@ const float R1_panel = 1010000.0;
 const float R2_panel = 99700.0;
 const float R1_actuator = 1023000.0;
 const float R2_actuator = 99500.0;
-const float VREF = 3.0; //using reference voltage from regulator 
+const float VREF = 3.33; //using reference voltage from regulator 
 
 float readVoltage; //V
 float measuredVoltage; //V
@@ -135,7 +135,7 @@ void setup() {
 long goDurationStart = 0;
 long goDurationEnd = 0;
 void setupMoveForDuration(long duration) {
-  Serial.println("Setting up move for duration");
+  //Serial.println("Setting up move for duration");
   goDurationStart = millis();
   goDurationEnd = goDurationStart + duration;
   isMovingDuration = true;
@@ -144,28 +144,28 @@ void setupMoveForDuration(long duration) {
 double goDistanceStart = 0.0;
 double goDistanceEnd = 0.0;
 void setupMoveForDistance(double distance) {
-  Serial.println("Setting up move for distance");
+  //Serial.println("Setting up move for distance");
   goDistanceStart = getIncline();
   goDistanceEnd = goDistanceStart + distance;
 }
 
 bool goToPositionCoarse(double angle) {
-  Serial.print("Going to "); Serial.println(angle, DOUBLE_PRECISION);
+  //Serial.print("Going to "); Serial.println(angle, DOUBLE_PRECISION);
   double currentAngle = getIncline();
   if (fabs(currentAngle - angle) < TOLERANCE) {
-    Serial.println("Not moving");
+    //Serial.println("Not moving");
     digitalWrite(downPin, HIGH);
     digitalWrite(upPin, HIGH);
     return true;
   }
   else if (currentAngle > angle) {
-    Serial.println("Going down");
+    //Serial.println("Going down");
     digitalWrite(downPin, LOW);
     digitalWrite(upPin, HIGH);
     return false;
   }
   else {
-    Serial.println("Going up");
+    //Serial.println("Going up");
     digitalWrite(downPin, HIGH);
     digitalWrite(upPin, LOW);
     return false;
@@ -181,20 +181,20 @@ bool isMovingPosition = false;
 bool goToPositionFine(double angle) {
   if (isMovingDuration) {
     if (goForDuration(moveUpward)) {
-      Serial.println("Durational move complete, waiting to take measurement");
+      //Serial.println("Durational move complete, waiting to take measurement");
       isMovingDuration = false;
       startFineWait = millis();
     }
   } else if (millis() - startFineWait > DELAY_FOR_MEASUREMENT) {
     if (fabs(getIncline() - angle) < TOLERANCE) {
-      Serial.println("Within tolerance of position, stopping move");
+      //Serial.println("Within tolerance of position, stopping move");
       return true;
     } else {
-      Serial.println("Adjustment to position needed");
+      //Serial.println("Adjustment to position needed");
       double diff = getIncline() - angle;
       double estTimeToComplete = 1000.0 * fabs(diff) / APPROX_ANGULAR_VELOCITY;
-      Serial.print("Angular difference "); Serial.println(diff, DOUBLE_PRECISION);
-      Serial.print("Estimated move time "); Serial.println(estTimeToComplete, DOUBLE_PRECISION);
+      //Serial.print("Angular difference "); Serial.println(diff, DOUBLE_PRECISION);
+     //Serial.print("Estimated move time "); Serial.println(estTimeToComplete, DOUBLE_PRECISION);
       setupMoveForDuration(estTimeToComplete);
       moveUpward = (getIncline() < angle);
       goForDuration(moveUpward);
@@ -206,7 +206,7 @@ bool goToPositionFine(double angle) {
 bool isMovingCoarsely = false;
 bool isMovingFinely = false;
 bool goToPosition(double angle) {
-  Serial.print("Current angle "); Serial.println(getIncline(), DOUBLE_PRECISION);
+  //Serial.print("Current angle "); Serial.println(getIncline(), DOUBLE_PRECISION);
   if (angle < minAngle){
     angle = minAngle;
   } else if (angle > maxAngle){
@@ -216,17 +216,17 @@ bool goToPosition(double angle) {
   
   if (!isMovingCoarsely && !isMovingFinely) {
     if (fabs(getIncline() - angle) < TOLERANCE) {
-      Serial.println("Move already at position");
+      //Serial.println("Move already at position");
       return true;
     } else {
-      Serial.println("Beginning move");
+      //Serial.println("Beginning move");
       isMovingCoarsely = true;
       goToPositionCoarse(angle);
     }
   } else if (isMovingCoarsely) {
-    Serial.println("Moving to approximate location");
+    //Serial.println("Moving to approximate location");
     if (goToPositionCoarse(angle)) {
-      Serial.println("Coarse moving complete, starting fine moving");
+      //Serial.println("Coarse moving complete, starting fine moving");
       isMovingCoarsely = false;
       isMovingFinely = true;
       goToPositionFine(angle);
@@ -234,7 +234,7 @@ bool goToPosition(double angle) {
   } else {
     //Serial.println("Fine positioning");
       if (goToPositionFine(angle)) {
-        Serial.println("Fine positioning complete");
+        //Serial.println("Fine positioning complete");
         isMovingFinely = false;
         return true;
       }
@@ -244,7 +244,7 @@ bool goToPosition(double angle) {
 
 bool goForDuration(bool upward) {
   if (millis() > goDurationEnd) {
-    Serial.println("Not moving");
+    //Serial.println("Not moving");
     digitalWrite(downPin, HIGH);
     digitalWrite(upPin, HIGH);
     return true;
@@ -293,6 +293,9 @@ bool takingStep = false;
 bool nullAction = false;
 bool movingToPosition = false;
 
+//checks if initial communication recieved from computer
+bool initialized = false;
+
 //for convenience
 bool noActionOccuring;
 
@@ -303,6 +306,7 @@ void handleIncomingAction(){
   //check if serial is available
    if (Serial.available()){
     msg = Serial.readString();
+    
 
     noActionOccuring = !takingStep && !movingToPosition && !nullAction;
     
@@ -325,6 +329,12 @@ void handleIncomingAction(){
     } else if (msg.charAt(0) == 'P' && noActionOccuring){
       movingToPosition = true;
       targetPos = stringToFloat(msg.substring(1));
+    } else if (msg.equals("INIT")){
+       //handshake message
+       //TODO: check for weird behavior if connection happens
+       //mid-action
+       Serial.print("RECV,"); 
+       Serial.println(getIncline());
     }
     
   }
@@ -335,28 +345,53 @@ void handleIncomingAction(){
 */
 void checkActionCompletion(){
   if (takingStep && takeStep(currentStepSize)){
-    Serial.println("step completed!");
-    Serial.println(netEnergyDuringTimestep);
+    //Serial.println("step completed!");
+    Serial.print(netEnergyDuringTimestep);
+    Serial.print(",");
+    Serial.println(getIncline());
     netEnergyDuringTimestep = 0;
     takingStep = false;
   } else if (movingToPosition && goToPosition(targetPos)){
-    Serial.println("moved to target position!");
+    //Serial.println("moved to target position!");
     Serial.println(netEnergyDuringTimestep);
+    Serial.print(",");
+    Serial.println(getIncline());
     netEnergyDuringTimestep = 0;
     movingToPosition = false;
   } else if (nullAction){
-    Serial.println("null action! nothing happened!");
+    //Serial.println("null action! nothing happened!");
     Serial.println(netEnergyDuringTimestep);
+    Serial.print(",");
+    Serial.println(getIncline());
     netEnergyDuringTimestep = 0;
     nullAction = false; 
   }
 }
 
+String initMsg;
+
+void waitForInitialization(){
+  if (Serial.available()){
+    initMsg = Serial.readString(); 
+   
+    if (initMsg.equals("INIT")){
+     Serial.print("RECV,"); 
+     Serial.println(getIncline());
+     initialized = true;
+    }
+  }
+}
+
 void loop() {
-  currentTime = millis();
-  updateEnergy();
-  handleIncomingAction();
-  checkActionCompletion();
-  lastTime = currentTime;
+  if (initialized){
+    currentTime = millis();
+    updateEnergy();
+    handleIncomingAction();
+    checkActionCompletion();
+    lastTime = currentTime;
+  } else{
+    waitForInitialization();
+  }
+
 
 }
