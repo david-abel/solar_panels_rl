@@ -31,6 +31,7 @@ class SolarTrackerArduino(object):
 
 		# Compute sun vec.
 		sun_az, sun_alt, = self.tracker(state)
+		#assuming single-axis panel is oriented on the east-west axis, and forward is to the east, backwards is to the west
 		panel_ew, panel_ns = state.get_panel_angle_ew(), state.get_panel_angle_ns()
 		sun_vec = sh._compute_sun_vector(sun_az, sun_alt)
 

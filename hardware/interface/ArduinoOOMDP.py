@@ -1,7 +1,7 @@
 from simple_rl.mdp.oomdp.OOMDPClass import OOMDP
 from simple_rl.mdp.oomdp.OOMDPObjectClass import OOMDPObject
 import sys
-sys.path.append("../../experiments") #TODO: reconfigure directory structure so this doesn't happen
+sys.path.append("../experiments") #TODO: reconfigure directory structure so this doesn't happen
 import solarOOMDP.solar_helpers as sh
 import time as t
 import datetime
@@ -28,7 +28,7 @@ class ArduinoOOMDP(OOMDP):
 				serial_loc='/dev/ttyACM0', 
 				baud=9600,
 				use_img=True,
-				panel_step=0.1, #radians, needed for SolarTracker class
+				panel_step=0.1, #radians, used to specify command to arduino
 				timestep=30,
 				latitude_deg=41.82,
 				longitude_deg=-71.4128):
@@ -39,6 +39,7 @@ class ArduinoOOMDP(OOMDP):
 		self.latitude_deg = latitude_deg # positive in the northern hemisphere
 		self.longitude_deg = longitude_deg # negative reckoning west from prime meridian in Greenwich, England
 		self.timestep = timestep #timestep in minutes
+		self.panel_step = panel_step
 		
 		#initialize communication with the arduino
 		self.ser = serial.Serial(serial_loc, baud, timeout=30)
@@ -122,11 +123,23 @@ class ArduinoOOMDP(OOMDP):
 		Transmits action to the arduino, recieves reward + new state information
 		'''
 		
-		self.ser.write(action)
+		#change command based on panel step
+		
+		command = "N"
+		
+		if action == "F":
+			command = "S{}".format(self.panel_step)
+		elif action == "B":
+			command = "S-{}".format(self.panel_step)
+		
+		self.ser.write(command)
+		
+		print "transmitted command {} to arduino".format(command)
 		
 		#blocks until recieved info
 		response = self.ser.readline().split(",") #contains reward,final angle
 		
+		print "recieved response {} from arduino".format(response)
 		
 		if response == "":
 			return 0 #no reward
@@ -134,7 +147,7 @@ class ArduinoOOMDP(OOMDP):
 		reward = float(response[0])
 		angle = float(response[1])
 		
-		print "recieved reward of {}, angle is now {}".format(reward, angle)
+		#print "recieved reward of {}, angle is now {}".format(reward, angle)
 		
 		#take image
 		pixels = self._capture_img() if self.use_img else None
@@ -153,6 +166,18 @@ class ArduinoOOMDP(OOMDP):
 		Returns the next state created by reward_func
 		'''
 		return self._next_state
+		
+	def _get_day(self):
+		return self.time.timetuple().tm_yday
+
+	def get_panel_step(self):
+		return self.panel_step
+
+	def get_reflective_index(self):
+		return self.reflective_index
+
+	def get_single_axis_actions(self):
+		return ["N", "F", "B"]
 		
 if __name__=="__main__":
 	#test OOMDP class

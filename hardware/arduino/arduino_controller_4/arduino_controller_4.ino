@@ -360,7 +360,7 @@ void checkActionCompletion(){
     movingToPosition = false;
   } else if (nullAction){
     //Serial.println("null action! nothing happened!");
-    Serial.println(netEnergyDuringTimestep);
+    Serial.print(netEnergyDuringTimestep);
     Serial.print(",");
     Serial.println(getIncline());
     netEnergyDuringTimestep = 0;
