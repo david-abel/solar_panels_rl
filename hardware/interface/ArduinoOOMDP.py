@@ -127,10 +127,11 @@ class ArduinoOOMDP(OOMDP):
 		
 		command = "N"
 		
+		#NOTE: INVERTED AXIS
 		if action == "F":
-			command = "S{}".format(self.panel_step)
-		elif action == "B":
 			command = "S-{}".format(self.panel_step)
+		elif action == "B":
+			command = "S{}".format(self.panel_step)
 		
 		self.ser.write(command)
 		

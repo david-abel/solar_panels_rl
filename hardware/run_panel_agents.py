@@ -20,6 +20,12 @@ sys.path.append("../experiments")
 from SolarTrackerArduino import SolarTrackerArduino
 import tracking_baselines as tb
 
+
+def save_state(filename, agent, state, action, reward, next_state ):
+	with open(filename, 'w') as f:
+		outstr = "date: {}\nagent: {} \n state: {} \n action: {}\n reward: {} \n next state: {}".format(state.get_date_time(), agent, state, action, reward, next_state)
+		f.write(outstr)
+
 def run():
 	'''
 	runs the experiment on a Grena tracker, for now.
@@ -27,7 +33,8 @@ def run():
 	
 	#set up experiment parameters.
 	
-	time_per_step = 0.02 #minutes
+	time_per_step = 1 #minutes
+	steps_before_switch = 60
 	
 	#create ArduinoOOMDP
 	
@@ -57,7 +64,7 @@ def run():
 	
 	
 	#TODO: switch current agent every so often
-	current_agent = grena_tracker_agent #sarsa_lin_rbf_agent #lin_ucb_agent 
+	agents = [grena_tracker_agent, sarsa_lin_rbf_agent, lin_ucb_agent]
 	
 	#code derived from run_experiments.py from simple_rl 
 	
@@ -65,24 +72,36 @@ def run():
 	
 	reward = 0
 	
+	logs = "logs"
+	
+	current_agent = 0
+	
+	steps = 0
+	
+	
 	while (True):
 		
 		#get agent action
-		action = current_agent.act(state, reward)
+		action = agents[current_agent].act(state, reward)
 		
 		print "taking action {}".format(action)
 		
 		#executes on Arduino interface
 		reward, next_state = arduino_mdp.execute_agent_action(action)
 		
-		print "--- {} \n agent {} took action {} and recieved reward {}".format(next_state.get_date_time(), str(current_agent), action, reward)
-		
-		#TODO: SAVE STATE + ACTION INFO
+		print "--- {} \n agent {} took action {} and recieved reward {}".format(next_state.get_date_time(), str(agents[current_agent]), action, reward)
 		
 		print "SLEEPING FOR {} MINUTES".format(time_per_step)
 		t.sleep(int(time_per_step*60)) #seconds to minute
 		
+		save_state("{}/{}_{}".format(logs, next_state.get_date_time(), str(agents[current_agent])), str(agent), state, action, reward, next_state)
+		
 		state = next_state
+		
+		steps += 1
+		
+		if steps % steps_before_switch == 0:
+			current_agent = (current_agent + 1) % 3
 		
 
 	

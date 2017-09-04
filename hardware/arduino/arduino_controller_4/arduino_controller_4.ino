@@ -118,6 +118,7 @@ float getIncline() {
   double compensatedX = (xAccel - midpointX) / rangeX;
   double compensatedY = (yAccel - midpointY) / rangeY;
   double angle = atan2(compensatedY, -compensatedX);
+  //NOTE: INVERTED
   return angle;
 }
 
@@ -334,7 +335,7 @@ void handleIncomingAction(){
        //TODO: check for weird behavior if connection happens
        //mid-action
        Serial.print("RECV,"); 
-       Serial.println(getIncline());
+       Serial.println(-getIncline());
     }
     
   }
@@ -348,21 +349,21 @@ void checkActionCompletion(){
     //Serial.println("step completed!");
     Serial.print(netEnergyDuringTimestep);
     Serial.print(",");
-    Serial.println(getIncline());
+    Serial.println(-getIncline());
     netEnergyDuringTimestep = 0;
     takingStep = false;
   } else if (movingToPosition && goToPosition(targetPos)){
     //Serial.println("moved to target position!");
     Serial.print(netEnergyDuringTimestep);
     Serial.print(",");
-    Serial.println(getIncline());
+    Serial.println(-getIncline());
     netEnergyDuringTimestep = 0;
     movingToPosition = false;
   } else if (nullAction){
     //Serial.println("null action! nothing happened!");
     Serial.print(netEnergyDuringTimestep);
     Serial.print(",");
-    Serial.println(getIncline());
+    Serial.println(-getIncline());
     netEnergyDuringTimestep = 0;
     nullAction = false; 
   }
@@ -376,7 +377,7 @@ void waitForInitialization(){
    
     if (initMsg.equals("INIT")){
      Serial.print("RECV,"); 
-     Serial.println(getIncline());
+     Serial.println(-getIncline());
      initialized = true;
     }
   }

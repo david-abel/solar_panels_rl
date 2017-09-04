@@ -43,6 +43,7 @@ class SolarTrackerArduino(object):
 		# Placeholder vars. Modified to reflect arduino action set.
 		max_cos_sim = -1
 		best_action = "N"
+		#NOTE: INVERTED AXIS
 		action_effect_dict = {
 				"N":(0,0),
 				"F":(0, np.degrees(self.panel_step)),
