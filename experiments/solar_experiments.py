@@ -7,16 +7,16 @@ Author: Emily Reif + David Abel
 
 # Python imports.
 import datetime
+import random
 
-# simple_rl imports.
+# Other imports.
 from simple_rl.run_experiments import run_agents_on_mdp
 from simple_rl.agents import RandomAgent, FixedPolicyAgent, LinearQLearnerAgent, LinearApproxSarsaAgent, LinUCBAgent
-
-# Local imports.
 from solarOOMDP.SolarOOMDPClass import SolarOOMDP
 from SolarTrackerClass import SolarTracker
 from solarOOMDP.PanelClass import Panel
 import tracking_baselines as tb
+
 
 def _make_mdp(loc, percept_type, panel_step, time_per_step=15.0):
     '''
@@ -56,22 +56,26 @@ def _make_mdp(loc, percept_type, panel_step, time_per_step=15.0):
 
     # Location.
     if loc == "australia":
-        date_time = datetime.datetime(day=1, hour=1, month=6, year=2018)
+        date_time = datetime.datetime(day=10, hour=10, month=6, year=2018)
         lat, lon = -34.25, 142.17
     elif loc == "iceland":
-        date_time = datetime.datetime(day=3, hour=16, month=7, year=2020)
+        date_time = datetime.datetime(day=1, hour=1, month=6, year=2018)
         lat, lon = 64.1265, -21.8174
     elif loc == "nyc":
-        date_time = datetime.datetime(day=10, hour=1, month=4, year=2020)
+        date_time = datetime.datetime(day=1, hour=1, month=6, year=2018)
         lat, lon = 40.7, 74.006
     elif loc == "nola":
-        date_time = datetime.datetime(day=10, hour=1, month=2, year=2018)
+        date_time = datetime.datetime(day=1, hour=1, month=6, year=2018)
         lat, lon = 30.03, 90.05
+    elif loc == "random":
+        date_time = datetime.datetime(day=random.randint(1,30), hour=random.randint(1,23), month=random.randint(1,12), year=random.randint(2010, 2025))
+        lat, lon = random.randint(-90, 90), random.randint(-180, 180)
 
     mode_dict = {'dual_axis':True, 'image_mode':image_mode, 'cloud_mode':cloud_mode}
 
     # Make MDP.
-    solar_mdp = SolarOOMDP(date_time=date_time,
+    solar_mdp = SolarOOMDP(name_ext=loc,
+                            date_time=date_time,
                             panel=panel,
                             timestep=time_per_step,
                             latitude_deg=lat,
@@ -101,16 +105,16 @@ def _setup_agents(solar_mdp):
     grena_tracker_agent = FixedPolicyAgent(grena_tracker.get_policy(), name="grena-tracker")
 
     # Setup RL agents
-    alpha, epsilon = 0.3, 0.3
+    alpha, epsilon = 0.5, 0.8
     num_features = solar_mdp.get_num_state_feats()
-    lin_ucb_agent = LinUCBAgent(actions, name="lin-ucb", alpha=0.3) #, alpha=0.2)
+    lin_ucb_agent = LinUCBAgent(actions, name="lin-ucb") #, alpha=0.2)
     ql_lin_approx_agent_g0 = LinearQLearnerAgent(actions, num_features=num_features, name="ql-lin-g0", alpha=alpha, epsilon=epsilon, gamma=0, rbf=True, anneal=True)
     ql_lin_approx_agent = LinearQLearnerAgent(actions, num_features=num_features, name="ql-lin", alpha=alpha, epsilon=epsilon, gamma=gamma, rbf=True, anneal=True)
-    # sarsa_lin_rbf_agent = LinearApproxSarsaAgent(actions, name="sarsa-lin", alpha=alpha, epsilon=epsilon, gamma=gamma, rbf=True, anneal=False)
     random_agent = RandomAgent(actions)
     
     # Regular experiments.
-    agents = [ql_lin_approx_agent, lin_ucb_agent, grena_tracker_agent, static_agent]
+    agents = [ql_lin_approx_agent, lin_ucb_agent, grena_tracker_agent, static_agent] #, optimal_agent]
+    # agents = [grena_tracker_agent, static_agent] #, optimal_agent]
 
     return agents
 
@@ -134,22 +138,21 @@ def setup_experiment(percept_type, loc="australia", panel_step=2.0, time_per_ste
     
     return agents, solar_mdp
 
-
 def main():
 
     # Setup experiment parameters, agents, mdp.
-    num_days = 3
-    per_hour = False
-    time_per_step = 20.0 # in minutes.
-    loc, steps = "nola", int(24*(60 / time_per_step)*num_days)
-    panel_step = 1.0 # Angle movement per action.
+    num_days = 1 # 20
+    per_hour = True
+    time_per_step = 10.0 # in minutes.
+    loc, steps = "australia", int(24*(60 / time_per_step)*num_days)
+    panel_step = 5.0 #30.0 # Angle movement per action.
 
     # If per hour is true, plots every hour long reward chunk, otherwise every day.
-    rew_step_count = (steps / num_days ) / 24 if per_hour else (steps / num_days)
+    rew_step_count = 1 #(steps / num_days ) / 24 if per_hour else (steps / num_days)
     sun_agents, sun_solar_mdp = setup_experiment("sun_percept", loc=loc, panel_step=panel_step, time_per_step=time_per_step)
 
     # # Run experiments.
-    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=5, episodes=1, steps=steps, clear_old_results=True, rew_step_count=rew_step_count, verbose=False)
+    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=5, episodes=100, steps=steps, clear_old_results=True, rew_step_count=rew_step_count, verbose=False)
 
 
 if __name__ == "__main__":

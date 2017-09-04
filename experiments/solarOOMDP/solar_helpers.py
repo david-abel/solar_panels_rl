@@ -73,7 +73,7 @@ def _compute_direct_radiation_tilt_factor(panel_ns_deg, panel_ew_deg, sun_altitu
 
     cos_diff = np.dot(sun_vector, panel_normal)
 
-    return abs(cos_diff)
+    return max(cos_diff, 0)
 
 def _compute_sun_vector(sun_altitude_deg, sun_azimuth_deg):
     '''
