@@ -21,7 +21,8 @@ from SolarTrackerArduino import SolarTrackerArduino
 import tracking_baselines as tb
 
 
-def save_state(filename, agent, state, action, reward, next_state ):
+def save_state(filename, agent, state, action, reward, next_state):
+	print "saving log to {}".format(filename)
 	with open(filename, 'w') as f:
 		outstr = "date: {}\nagent: {} \n state: {} \n action: {}\n reward: {} \n next state: {}".format(state.get_date_time(), agent, state, action, reward, next_state)
 		f.write(outstr)
@@ -91,17 +92,20 @@ def run():
 		
 		print "--- {} \n agent {} took action {} and recieved reward {}".format(next_state.get_date_time(), str(agents[current_agent]), action, reward)
 		
-		print "SLEEPING FOR {} MINUTES".format(time_per_step)
-		t.sleep(int(time_per_step*60)) #seconds to minute
 		
-		save_state("{}/{}_{}".format(logs, next_state.get_date_time(), str(agents[current_agent])), str(agent), state, action, reward, next_state)
 		
+		
+		save_state("{}/{}_{}.txt".format(logs, next_state.get_date_time(), str(agents[current_agent])), str(agents[current_agent]), state, action, reward, next_state)		
 		state = next_state
 		
 		steps += 1
 		
 		if steps % steps_before_switch == 0:
 			current_agent = (current_agent + 1) % 3
+			print "SWITCHING AGENT TO {}".format(str(agents[current_agent]))
+		
+		print "SLEEPING FOR {} MINUTES".format(time_per_step)
+		t.sleep(int(time_per_step*60)) #seconds to minute
 		
 
 	

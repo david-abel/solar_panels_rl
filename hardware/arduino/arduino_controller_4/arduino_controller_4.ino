@@ -376,6 +376,8 @@ void waitForInitialization(){
     initMsg = Serial.readString(); 
    
     if (initMsg.equals("INIT")){
+     //NEED TO RESET HERE
+     netEnergyDuringTimestep = 0;
      Serial.print("RECV,"); 
      Serial.println(-getIncline());
      initialized = true;
