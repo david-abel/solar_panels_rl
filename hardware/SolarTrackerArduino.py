@@ -3,7 +3,7 @@ Modified solartracker class for arduino actions.
 '''
 
 # Python imports.
-import numpy
+import numpy as np
 
 # Local imports.
 import solarOOMDP.solar_helpers as sh
@@ -29,29 +29,31 @@ class SolarTrackerArduino(object):
 			(str): Action in the set SolarOOMDPClass.ACTIONS
 		'''
 
-		# Compute sun vec.
+		# Compute sun vec. in degrees. 
 		sun_az, sun_alt, = self.tracker(state)
 		#assuming single-axis panel is oriented on the east-west axis, and forward is to the east, backwards is to the west
-		panel_ew, panel_ns = state.get_panel_angle_ew(), state.get_panel_angle_ns()
+		#converting to degrees
+		panel_ew, panel_ns = np.degrees(state.get_panel_angle_ew()), np.degrees(state.get_panel_angle_ns())
 		sun_vec = sh._compute_sun_vector(sun_az, sun_alt)
+		
+		
+		print "GRENA PLANNING: desired sun vec: {}".format(sun_vec)
+		print "GRENA PLANNING: current panel normal vec: {}".format(sh._compute_panel_normal_vector(panel_ns , panel_ew))
 
 		# Placeholder vars. Modified to reflect arduino action set.
 		max_cos_sim = -1
 		best_action = "N"
 		action_effect_dict = {
 				"N":(0,0),
-				"F":(self.panel_step, 0),
-				"B":(-self.panel_step, 0),
+				"F":(0, np.degrees(self.panel_step)),
+				"B":(0, np.degrees(-self.panel_step)),
 			}
-
-		#if self.dual_axis:
-			#action_effect_dict["panel_forward_ew"] = (0, self.panel_step)
-			#action_effect_dict["panel_back_ew"] =  (0, -self.panel_step)
 		# Find action that minimizes cos difference to estimate of sun vector.
 		for action in action_effect_dict.keys():
 			delta_alt, delta_az = action_effect_dict[action]
 			panel_vec = sh._compute_panel_normal_vector(panel_ns + delta_alt, panel_ew + delta_az)
-			cos_sim = numpy.dot(sun_vec, panel_vec)
+			cos_sim = np.dot(sun_vec, panel_vec)
+			
 			if cos_sim > max_cos_sim:
 				best_action = action
 				max_cos_sim = cos_sim

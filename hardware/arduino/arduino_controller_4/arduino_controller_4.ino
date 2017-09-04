@@ -353,7 +353,7 @@ void checkActionCompletion(){
     takingStep = false;
   } else if (movingToPosition && goToPosition(targetPos)){
     //Serial.println("moved to target position!");
-    Serial.println(netEnergyDuringTimestep);
+    Serial.print(netEnergyDuringTimestep);
     Serial.print(",");
     Serial.println(getIncline());
     netEnergyDuringTimestep = 0;

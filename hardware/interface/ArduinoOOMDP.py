@@ -51,7 +51,7 @@ class ArduinoOOMDP(OOMDP):
 		if result.startswith("RECV"):
 			print "connection established, initial angle is {}".format(initial_angle) 
 		else:
-			raise Exception("ERROR: invalid response from arduino")
+			raise Exception("ERROR: invalid response from arduino: {}".format(result))
 		
 		if self.use_img:
 			#initialize camera connection

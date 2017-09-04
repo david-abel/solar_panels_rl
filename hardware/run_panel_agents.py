@@ -57,7 +57,7 @@ def run():
 	
 	
 	#TODO: switch current agent every so often
-	current_agent = sarsa_lin_rbf_agent #lin_ucb_agent #grena_tracker_agent
+	current_agent = grena_tracker_agent #sarsa_lin_rbf_agent #lin_ucb_agent 
 	
 	#code derived from run_experiments.py from simple_rl 
 	
@@ -77,8 +77,12 @@ def run():
 		
 		print "--- {} \n agent {} took action {} and recieved reward {}".format(next_state.get_date_time(), str(current_agent), action, reward)
 		
+		#TODO: SAVE STATE + ACTION INFO
+		
 		print "SLEEPING FOR {} MINUTES".format(time_per_step)
 		t.sleep(int(time_per_step*60)) #seconds to minute
+		
+		state = next_state
 		
 
 	

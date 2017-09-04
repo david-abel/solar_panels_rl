@@ -26,11 +26,11 @@ bool usePlotter = false;
 //notes (from SparkFun tutorial)
 //make sure ground of measurement circuit is connected to ground of INA169 board. 
 ////For solar panel
-//const int A_PIN = A3;
-//const int V_PIN = A2;
+const int A_PIN = A3;
+const int V_PIN = A2;
 
-const int A_PIN = A1;
-const int V_PIN = A0;
+//const int A_PIN = A1;
+//const int V_PIN = A0;
 
 void setup() {
   Serial.begin(9600);
@@ -52,13 +52,13 @@ void loop() {
 
   //using Serial plotter
 
-//  Serial.print(current, 3);
-//  if (!usePlotter){
-//    Serial.print(" A ");
-//  } else{
-//    Serial.print("\t"); 
-//  }
-//  
+Serial.print(current, 3);
+ if (!usePlotter){
+    Serial.print(" A ");
+  } else{
+    Serial.print("\t"); 
+  }
+  
   
 
   measuredVoltage = voltageDivider(readingToVoltage(analogRead(V_PIN)));
