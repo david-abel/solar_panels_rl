@@ -336,6 +336,9 @@ void handleIncomingAction(){
        //mid-action
        Serial.print("RECV,"); 
        Serial.println(-getIncline());
+       Serial.flush();
+       //NEED TO RESET HERE
+     netEnergyDuringTimestep = 0;
     }
     
   }
@@ -350,6 +353,7 @@ void checkActionCompletion(){
     Serial.print(netEnergyDuringTimestep);
     Serial.print(",");
     Serial.println(-getIncline());
+    Serial.flush();
     netEnergyDuringTimestep = 0;
     takingStep = false;
   } else if (movingToPosition && goToPosition(targetPos)){
@@ -357,6 +361,7 @@ void checkActionCompletion(){
     Serial.print(netEnergyDuringTimestep);
     Serial.print(",");
     Serial.println(-getIncline());
+    Serial.flush();
     netEnergyDuringTimestep = 0;
     movingToPosition = false;
   } else if (nullAction){
@@ -364,6 +369,7 @@ void checkActionCompletion(){
     Serial.print(netEnergyDuringTimestep);
     Serial.print(",");
     Serial.println(-getIncline());
+    Serial.flush();
     netEnergyDuringTimestep = 0;
     nullAction = false; 
   }
@@ -380,6 +386,7 @@ void waitForInitialization(){
      netEnergyDuringTimestep = 0;
      Serial.print("RECV,"); 
      Serial.println(-getIncline());
+     Serial.flush();
      initialized = true;
     }
   }

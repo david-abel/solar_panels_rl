@@ -134,16 +134,20 @@ class ArduinoOOMDP(OOMDP):
 			command = "S{}".format(self.panel_step)
 		
 		self.ser.write(command)
+		self.ser.flushOutput()
 		
 		print "transmitted command {} to arduino".format(command)
 		
 		#blocks until recieved info
 		response = self.ser.readline().split(",") #contains reward,final angle
 		
+		print "flushing input buffer"
+		self.ser.flushInput()
+		
 		print "recieved response {} from arduino".format(response)
 		
-		if response == "":
-			return 0 #no reward
+		if response[0] == "":
+			return 0 #no reward/ failure occured
 			
 		reward = float(response[0])
 		angle = float(response[1])
