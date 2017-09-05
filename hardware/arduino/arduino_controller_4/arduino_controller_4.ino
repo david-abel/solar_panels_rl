@@ -335,7 +335,7 @@ void handleIncomingAction(){
        //TODO: check for weird behavior if connection happens
        //mid-action
        Serial.print("RECV,"); 
-       Serial.println(-getIncline());
+       Serial.println(getIncline());
        Serial.flush();
        //NEED TO RESET HERE
      netEnergyDuringTimestep = 0;
@@ -352,7 +352,7 @@ void checkActionCompletion(){
     //Serial.println("step completed!");
     Serial.print(netEnergyDuringTimestep);
     Serial.print(",");
-    Serial.println(-getIncline());
+    Serial.println(getIncline());
     Serial.flush();
     netEnergyDuringTimestep = 0;
     takingStep = false;
@@ -360,7 +360,7 @@ void checkActionCompletion(){
     //Serial.println("moved to target position!");
     Serial.print(netEnergyDuringTimestep);
     Serial.print(",");
-    Serial.println(-getIncline());
+    Serial.println(getIncline());
     Serial.flush();
     netEnergyDuringTimestep = 0;
     movingToPosition = false;
@@ -368,7 +368,7 @@ void checkActionCompletion(){
     //Serial.println("null action! nothing happened!");
     Serial.print(netEnergyDuringTimestep);
     Serial.print(",");
-    Serial.println(-getIncline());
+    Serial.println(getIncline());
     Serial.flush();
     netEnergyDuringTimestep = 0;
     nullAction = false; 
@@ -385,7 +385,7 @@ void waitForInitialization(){
      //NEED TO RESET HERE
      netEnergyDuringTimestep = 0;
      Serial.print("RECV,"); 
-     Serial.println(-getIncline());
+     Serial.println(getIncline());
      Serial.flush();
      initialized = true;
     }

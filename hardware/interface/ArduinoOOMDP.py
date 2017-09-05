@@ -25,7 +25,7 @@ class ArduinoOOMDP(OOMDP):
 	
 	def __init__(self, 
 				date_time,
-				serial_loc='/dev/ttyACM0', 
+				serial_loc='/dev/ttyACM1', 
 				baud=9600,
 				use_img=True,
 				panel_step=0.1, #radians, used to specify command to arduino
@@ -44,6 +44,7 @@ class ArduinoOOMDP(OOMDP):
 		#initialize communication with the arduino
 		self.ser = serial.Serial(serial_loc, baud, timeout=30)
 		self.ser.write("INIT")
+		self.ser.flushOutput()
 		print "establishing communication with panel" 
 		result = self.ser.readline() #result should take the form of RECV,<current angle>
 		initial_angle = float(result.split(",")[1])
@@ -129,9 +130,9 @@ class ArduinoOOMDP(OOMDP):
 		
 		#NOTE: INVERTED AXIS
 		if action == "F":
-			command = "S-{}".format(self.panel_step)
-		elif action == "B":
 			command = "S{}".format(self.panel_step)
+		elif action == "B":
+			command = "S-{}".format(self.panel_step)
 		
 		self.ser.write(command)
 		self.ser.flushOutput()
