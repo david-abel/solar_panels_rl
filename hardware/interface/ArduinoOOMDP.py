@@ -25,7 +25,7 @@ class ArduinoOOMDP(OOMDP):
 	
 	def __init__(self, 
 				date_time,
-				serial_loc='/dev/ttyACM1', 
+				serial_loc='/dev/ttyACM0', 
 				baud=9600,
 				use_img=True,
 				panel_step=0.1, #radians, used to specify command to arduino
@@ -42,17 +42,24 @@ class ArduinoOOMDP(OOMDP):
 		self.panel_step = panel_step
 		
 		#initialize communication with the arduino
-		self.ser = serial.Serial(serial_loc, baud, timeout=30)
-		self.ser.write("INIT")
+		self.ser = serial.Serial(serial_loc, baud, timeout=120)
 		self.ser.flushOutput()
+		self.ser.flushInput()
+		self.ser.write("INIT")
+		
 		print "establishing communication with panel" 
 		result = self.ser.readline() #result should take the form of RECV,<current angle>
-		initial_angle = float(result.split(",")[1])
+		
+		
+		
 		
 		if result.startswith("RECV"):
-			print "connection established, initial angle is {}".format(initial_angle) 
+			initial_angle_ns = float(result.split(",")[1])
+			print "connection established, initial angle along ns axis is {}".format(initial_angle_ns) 
 		else:
 			raise Exception("ERROR: invalid response from arduino: {}".format(result))
+			
+		
 		
 		if self.use_img:
 			#initialize camera connection
@@ -69,7 +76,7 @@ class ArduinoOOMDP(OOMDP):
 		self.time = date_time
 		
 		#create initial state
-		init_state = self._create_state(initial_angle, 0, start_pixels, self.init_time)
+		init_state = self._create_state(0, initial_angle_ns, start_pixels, self.init_time)
 		
 		OOMDP.__init__(self, ArduinoOOMDP.ACTIONS, self.objects, self._transition_func, self._reward_func, init_state=init_state)
 
@@ -133,6 +140,8 @@ class ArduinoOOMDP(OOMDP):
 			command = "S{}".format(self.panel_step)
 		elif action == "B":
 			command = "S-{}".format(self.panel_step)
+		elif action.startswith("P"):
+			command = action
 		
 		self.ser.write(command)
 		self.ser.flushOutput()
@@ -151,7 +160,7 @@ class ArduinoOOMDP(OOMDP):
 			return 0 #no reward/ failure occured
 			
 		reward = float(response[0])
-		angle = float(response[1])
+		angle_ns = float(response[1])
 		
 		#print "recieved reward of {}, angle is now {}".format(reward, angle)
 		
@@ -162,7 +171,7 @@ class ArduinoOOMDP(OOMDP):
 		self.time = datetime.datetime.now()
 		
 		#create new state
-		self._next_state = self._create_state(angle, 0, pixels, self.time)
+		self._next_state = self._create_state(0, angle_ns, pixels, self.time)
 		#self._next_state.update() #I think this is called upon init and is redundant
 		
 		return reward

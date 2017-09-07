@@ -393,15 +393,15 @@ void waitForInitialization(){
 }
 
 void loop() {
-  if (initialized){
+//  if (initialized){
     currentTime = millis();
     updateEnergy();
     handleIncomingAction();
     checkActionCompletion();
     lastTime = currentTime;
-  } else{
-    waitForInitialization();
-  }
+//  } else{
+//    waitForInitialization();
+//  }
 
 
 }
