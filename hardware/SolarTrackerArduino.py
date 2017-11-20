@@ -34,6 +34,7 @@ class SolarTrackerArduino(object):
 		#assuming single-axis panel is oriented on the east-west axis, and forward is to the east, backwards is to the west
 		#converting to degrees
 		panel_ew, panel_ns = np.degrees(state.get_panel_angle_ew()), np.degrees(state.get_panel_angle_ns())
+		print sun_az, sun_alt
 		sun_vec = sh._compute_sun_vector(sun_az, sun_alt)
 		
 		
@@ -44,15 +45,17 @@ class SolarTrackerArduino(object):
 		max_cos_sim = -1
 		best_action = "N"
 		#NOTE: INVERTED AXIS
+		
+		#changes rotating along the north south axis, 
 		action_effect_dict = {
 				"N":(0,0),
-				"F":(0, np.degrees(self.panel_step)),
-				"B":(0, np.degrees(-self.panel_step)),
+				"F":(np.degrees(self.panel_step), 0),
+				"B":(np.degrees(-self.panel_step), 0),
 			}
 		# Find action that minimizes cos difference to estimate of sun vector.
 		for action in action_effect_dict.keys():
-			delta_alt, delta_az = action_effect_dict[action]
-			panel_vec = sh._compute_panel_normal_vector(panel_ns + delta_alt, panel_ew + delta_az)
+			delta_ns, delta_ew = action_effect_dict[action]
+			panel_vec = sh._compute_panel_normal_vector(panel_ns + delta_ns, panel_ew + delta_ew)
 			cos_sim = np.dot(sun_vec, panel_vec)
 			
 			if cos_sim > max_cos_sim:

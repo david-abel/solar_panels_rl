@@ -87,13 +87,17 @@ def _compute_sun_vector(sun_altitude_deg, sun_azimuth_deg):
         sun_azimuth_deg (float)
 
     Notes:
-        We assume x+ is North, x- is South, y+ is E, y- is South, z+ is up, z- is down.
+        We assume x+ is North, x- is South, y+ is E, y- is W, z+ is up, z- is down.
     '''
 
     sun_alt_radians, sun_az_radians = m.radians(sun_altitude_deg), m.radians(sun_azimuth_deg)
     x = m.sin(m.pi - sun_az_radians) * m.cos(sun_alt_radians)
     y = m.cos(m.pi - sun_az_radians) * m.cos(sun_alt_radians)
     z = m.sin(sun_alt_radians)
+    
+    #x = m.cos(m.pi - sun_az_radians) * m.cos(sun_alt_radians)
+    #y = m.cos(m.pi - sun_az_radians) * m.sin(sun_alt_radians)
+    #z = m.sin(sun_alt_radians)
 
     return _normalize(x, y, z)
 

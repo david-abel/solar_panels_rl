@@ -5,6 +5,8 @@ Runs the fixed-policy and learning agents on the physical panel.
 # Python imports.
 import datetime
 import time as t
+import random as r
+from os import mkdir
 
 # simple_rl imports.
 from simple_rl.run_experiments import run_agents_on_mdp
@@ -73,7 +75,11 @@ def run():
 	
 	reward = 0
 	
-	logs = "logs"
+	#create new log directory
+	
+	logs = "{}_logs".format(datetime.datetime.now())
+
+	mkdir(logs)
 	
 	current_agent = 0
 	
@@ -91,10 +97,7 @@ def run():
 		reward, next_state = arduino_mdp.execute_agent_action(action)
 		
 		print "--- {} \n agent {} took action {} and recieved reward {}".format(next_state.get_date_time(), str(agents[current_agent]), action, reward)
-		
-		
-		
-		
+				
 		save_state("{}/{}_{}.txt".format(logs, next_state.get_date_time(), str(agents[current_agent])), str(agents[current_agent]), state, action, reward, next_state)		
 		state = next_state
 		
@@ -103,6 +106,11 @@ def run():
 		if steps % steps_before_switch == 0:
 			current_agent = (current_agent + 1) % 3
 			print "SWITCHING AGENT TO {}".format(str(agents[current_agent]))
+			new_angle = r.uniform(-1.1, 1.1)
+			print "MOVING PANEL TO {}".format(new_angle)
+			_, state = arduino_mdp.execute_agent_action("P{}".format(new_angle))
+			reward = 0 #reset reward
+			
 		
 		print "SLEEPING FOR {} MINUTES".format(time_per_step)
 		t.sleep(int(time_per_step*60)) #seconds to minute
