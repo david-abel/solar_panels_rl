@@ -196,8 +196,14 @@ class SolarOOMDP(OOMDP):
             reward = power * self.timestep * 60 # Joules
 
         else:
-            flux = self._compute_flux(sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg)
+            if "energy" in self.name_ext:
+                flux, r_d, r_f, r_r = self._compute_flux(sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg, breakdown=True)
             
+                p_d, p_f, p_r = self.panel.get_power(r_d), self.panel.get_power(r_f), self.panel.get_power(r_r)
+                e_d, e_f, e_r = p_d * self.timestep * 60, p_f * self.timestep * 60, p_r * self.timestep * 60
+            else:
+                flux = self._compute_flux(sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg)
+
             # Compute electrical power output of panel for given flux.
             power = self.panel.get_power(flux)
 
@@ -213,14 +219,29 @@ class SolarOOMDP(OOMDP):
 
             reward = energy - cost
 
+            # sh._write_datum_to_file(str(self), agent, r_d, "direct")
+            # sh._write_datum_to_file(str(self), agent, r_f, "diffuse")
+            # sh._write_datum_to_file(str(self), agent, r_r, "reflective")
 
         reward = (reward) / 1000000.0 # Convert Watts to Megawatts
 
-        # print round(reward, 4), self.time.timetuple().tm_hour, self.get_local_time().timetuple().tm_hour
+        if "energy" in self.name_ext:
+            e_d, e_f, e_r = e_d / 1000000.0, e_f / 1000000.0, e_r / 1000000.0
+            return reward, e_d, e_f, e_r
 
         return reward
 
-    def _compute_flux(self, sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg):        
+
+
+    def _compute_flux(self, sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg, breakdown=False):        
+        '''
+        Args:
+            sun_altitude_deg (float)
+            sun_azimuth_deg (float)
+            panel_ns_deg (float)
+            panel_ew_deg (float)
+            breakdown (bool): If true returns breakdown of energy
+        '''
         # Compute direct radiation.
         direct_rads = sh._compute_radiation_direct(self.get_local_time(), sun_altitude_deg)
         diffuse_rads = sh._compute_radiation_diffuse(self.get_local_time(), self._get_day(), sun_altitude_deg)
@@ -238,7 +259,14 @@ class SolarOOMDP(OOMDP):
                     diffuse_rads * diffuse_tilt_factor + \
                     reflective_rads * reflective_tilt_factor
 
-        # print direct_rads * direct_tilt_factor, diffuse_rads * diffuse_tilt_factor, reflective_rads * reflective_tilt_factor
+        # print round(direct_rads * direct_tilt_factor, 3), round(diffuse_rads * diffuse_tilt_factor, ), round(reflective_rads * reflective_tilt_factor, 3)
+
+        r_d = direct_rads * direct_tilt_factor
+        r_f = diffuse_rads * diffuse_tilt_factor
+        r_r = reflective_rads * reflective_tilt_factor
+
+        if breakdown:
+            return flux, r_d, r_f, r_r
 
         return flux
 
@@ -252,7 +280,7 @@ class SolarOOMDP(OOMDP):
     def _compute_optimal_reward(self, sun_altitude_deg, sun_azimuth_deg):
         optimal_panel_ew = 0
         optimal_panel_ns = 0
-        optimal_reward = -.01
+        optimal_reward = -.001
 
         # Iterate over all possible panel angles.
         for panel_ew_deg in xrange(-90, 90, 5):
@@ -261,9 +289,11 @@ class SolarOOMDP(OOMDP):
                 # Check reward.
                 reward = self._compute_flux(sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg)
                 if reward > optimal_reward:
-                    optimal_panel_ns = panel_ns_deg
-                    optimal_panel_ew = panel_ew_deg
                     optimal_reward = reward
+
+        power = self.panel.get_power(optimal_reward)
+        energy = power * self.timestep * 60 # Joules
+        optimal_reward = energy / 1000000.0 # Convert Watts to Megawatts
 
         return optimal_reward
 
@@ -280,7 +310,6 @@ class SolarOOMDP(OOMDP):
         '''
         panel_angle_ew = state.get_panel_angle_ew(panel_index=panel_index)
         panel_angle_ns = state.get_panel_angle_ns(panel_index=panel_index)
-
 
         if "," in action:
             # Bandit action.

@@ -7,6 +7,11 @@ from Pysolar import solar, radiation #capitalize to get it to work?
 
 CLOUD_DIFFUS_FACTOR = 1.0 #0.85 # 10% of light is blocked
 
+def _write_datum_to_file(mdp_name, agent, datum, datum_name):
+    out_file = open(os.path.join("..", "results", mdp_name, str(agent)) + "-" + datum_name + ".csv", "a+")
+    out_file.write(str(datum) + ",")
+    out_file.close()
+
 def _compute_sun_altitude(latitude_deg, longitude_deg, time):
     return solar.GetAltitude(latitude_deg, longitude_deg, time)
 
@@ -28,7 +33,7 @@ def _compute_radiation_reflective(time, day, reflective_index, sun_altitude_deg)
     return max(reflective_index * rad_direct * (m.sin(m.radians(sun_altitude_deg)) + sky_diffus), 0.0)
 
 def _compute_sky_diffusion(day):
-    return 0.095 * m.sin(0.99*day - 99)
+    return 0.095 + 0.04 * m.sin(0.99*day - 99)
 
 # --- CLOUDS ---
 

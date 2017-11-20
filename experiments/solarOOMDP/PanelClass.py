@@ -68,7 +68,7 @@ class Panel():
         #torque = COM_offset*mass*g_sin \theta
         torque_g = self.COM_offset*self.mass*g*np.sin(current_angle)
 
-        print "current angle: {} torque: {}".format(current_angle, torque_g)
+        # print "current angle: {} torque: {}".format(current_angle, torque_g)
 
         #assume gravitational torque is equal to load, i.e. moving at constant velocity
 

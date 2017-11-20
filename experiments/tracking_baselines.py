@@ -43,7 +43,6 @@ def _compute_new_times(year, month, day, hour):
 def static_policy(state, action="do_nothing"):
     return action
 
-
 def optimal_policy(state):
     return "optimal"
 
@@ -85,23 +84,22 @@ def tracker_from_day_time_loc(state, tracker):
 
     return sun_az, sun_alt
 
-def grena_tracker(state, simple=True):
+def grena_tracker(state):
     '''
     Args:
         state (OOMDPstate)
-        simple (boolean): If true, uses Algorithm One from [Grena 2012], else uses Algorithm two
 
     Returns:
         (tuple): represents sun location.
             altitude (float): degrees up from the horizon.
             azimuth (float): degrees along the equator from north.
     '''
-    year, month, day, hour = state.get_year(), state.get_month(), state.get_day_of_year(), state.get_hour()
+    date_time_obj = state.get_date_time() + state.get_date_time().utcoffset()
+    year, month, day, hour = date_time_obj.year, date_time_obj.month, date_time_obj.day, date_time_obj.hour
     latitude_deg, longitude_deg = state.get_latitude(), state.get_longitude()
     latitude_rad, longitude_rad = m.radians(latitude_deg), m.radians(longitude_deg)
 
-    hour = hour
-    # year, month, time, rot_ind_time = _compute_new_times(year, month, day, hour)
+    year, month, time, rot_ind_time = _compute_new_times(year, month, day, hour)
 
     pressure = 1.0
     temperature = 15.0
@@ -151,7 +149,7 @@ def grena_tracker(state, simple=True):
     zenith = pi_2 - ep - De;
 
     # Flip axis direction.
-    azimuth_estimate = - ((360 + m.degrees(azimuth_estimate)) % 360)
+    azimuth_estimate =  -((360 + m.degrees(azimuth_estimate)) % 360)
 
     # Estimate altitude.
     altitude_estimate = m.degrees(m.asin(m.cos(latitude_rad) * m.cos(decl) * \
