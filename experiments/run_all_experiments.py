@@ -27,7 +27,7 @@ def spawn_subproc(location):
 
 def main():
 
-	locations = ["nola"] #["alaska", "australia", "nola", "japan"]
+	locations = ["nola", "alaska", "australia", "nola", "japan"]
 
 	for loc in locations:
 		spawn_subproc(loc)

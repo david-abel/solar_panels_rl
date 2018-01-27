@@ -148,7 +148,7 @@ def _setup_agents(solar_mdp):
     random_agent = RandomAgent(actions)
     
     # Regular experiments.
-    agents = [lin_ucb_agent, sarsa_agent, sarsa_agent_g0] #, grena_tracker_agent, static_agent] #, optimal_agent]
+    agents = [lin_ucb_agent, sarsa_agent, sarsa_agent_g0, grena_tracker_agent, static_agent] #, optimal_agent]
     # agents = [lin_ucb_agent, grena_tracker_agent] #, sarsa_agent, sarsa_agent_g0, grena_tracker_agent, static_agent] #, optimal_agent]
     # agents = [grena_tracker_agent, static_agent] #, optimal_agent]
 
@@ -185,7 +185,7 @@ def parse_args():
         Parse all arguments
     '''
     parser = argparse.ArgumentParser()
-    parser.add_argument("-loc", type = str, default = "alaska", nargs = '?', help = "Choose the location for the experiment.")
+    parser.add_argument("-loc", type = str, default = "australia", nargs = '?', help = "Choose the location for the experiment.")
     parser.add_argument("-percept", type = str, default = "sun", nargs = '?', help = "One of {sun, image, cloud}.")
     parser.add_argument("-dual_axis", type = bool, default = False, nargs = '?', help = "If true uses dual axis tracker.")
     args = parser.parse_args()
@@ -197,7 +197,7 @@ def main():
 
     # Paper experiments:
         # num_days = 1
-        # time_per_step = 10
+        # time_per_step = 10 for single axis, 20 for dual.
         # panel_step = 5, dual: 20
         # reflective = 0.55
         # instances = 10
@@ -206,11 +206,12 @@ def main():
     # Setup experiment parameters, agents, mdp.
     num_days = 1
     per_hour = True
-    time_per_step = 10.0 # in minutes.
     loc, percept_type, dual_axis = parse_args()
+    time_per_step = 10.0 if not dual_axis else 20.0 # in minutes.
     steps = int(24*(60 / time_per_step)*num_days)
-    panel_step = 5
+    panel_step = 5 if not dual_axis else 20
     reflective_index = 0.55
+    episodes = 50 if not dual_axis else 100
 
     energy_breakdown_experiment = False
 
@@ -219,7 +220,7 @@ def main():
     sun_agents, sun_solar_mdp = setup_experiment(percept_type=percept_type, loc=loc, dual_axis=dual_axis, panel_step=panel_step, time_per_step=time_per_step, reflective_index=reflective_index, energy_breakdown_experiment=energy_breakdown_experiment)
 
     # # Run experiments.
-    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=10, episodes=50, steps=steps, clear_old_results=True, rew_step_count=rew_step_count, verbose=False)
+    run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=10, episodes=episodes, steps=steps, clear_old_results=True, rew_step_count=rew_step_count, verbose=True)
 
 
 if __name__ == "__main__":
