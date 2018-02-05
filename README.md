@@ -12,6 +12,6 @@ Experiments require [pysolar](http://pysolar.org/) version [0.6](https://github.
 
 ## Example
 
-To reproduce plots from the IAAI paper, simplar run the _run_all_experiments.py_ in _experiments_.
+To reproduce plots from the IAAI paper, simply run the _run_all_experiments.py_ in _experiments_.
 
 Contact david_abel@brown.edu with any questions.
