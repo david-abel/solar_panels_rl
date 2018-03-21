@@ -40,8 +40,13 @@ class SolarOOMDP(OOMDP):
                 img_dims=16,
                 mode_dict = {'dual_axis':True, 'image_mode':False, 'cloud_mode':False}):
 
-                # Error check the lat/long.
-        if abs(latitude_deg) > 90 or abs(longitude_deg) > 180:
+        if name_ext == "usa_avg":
+            self.loc_index = 0
+            self.lat_list, self.lon_list = latitude_deg, longitude_deg
+            latitude_deg, longitude_deg = latitude_deg[0], longitude_deg[1]
+
+            # Error check the lat/long.
+        elif abs(latitude_deg) > 90 or abs(longitude_deg) > 180:
             print "Error: latitude must be between [-90, 90], longitude between [-180,180]. Lat:", latitude_deg, "Long:", longitude_deg
             quit()
 
@@ -106,6 +111,11 @@ class SolarOOMDP(OOMDP):
         '''
         self.time = self.init_time
         OOMDP.reset(self)
+
+    def end_of_instance(self):
+        if self.name_ext == "usa_avg":
+            self.loc_index = (self.loc_index + 1) % len(self.lat_list)
+            self.latitude_deg, self.longitude_deg = self.lat_list[self.loc_index], self.lon_list[self.loc_index]
 
     def _get_default_panel_obj_list(self):
         panels = []
@@ -258,8 +268,6 @@ class SolarOOMDP(OOMDP):
         flux = direct_rads * direct_tilt_factor + \
                     diffuse_rads * diffuse_tilt_factor + \
                     reflective_rads * reflective_tilt_factor
-
-        # print round(direct_rads * direct_tilt_factor, 3), round(diffuse_rads * diffuse_tilt_factor, ), round(reflective_rads * reflective_tilt_factor, 3)
 
         r_d = direct_rads * direct_tilt_factor
         r_f = diffuse_rads * diffuse_tilt_factor
@@ -467,12 +475,10 @@ class SolarOOMDP(OOMDP):
         percept = "true"
         ext = ""
         if self.image_mode and self.cloud_mode:
-            percept = "cloud_img"
-        elif self.image_mode:
-            percept = "img"
+            percept = "image"
         if self.dual_axis:
             ext = "d_"
-        return "solarmdp_" + ext + self.name_ext + "_p-" + str(self.panel_step) + "_" + percept# + "_" + str(self.reflective_index)
+        return "solar_" + ext + self.name_ext + "_p-" + str(self.panel_step) + "_" + percept
 
     def _error_check(self, state, action):
         '''
