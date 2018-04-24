@@ -101,7 +101,6 @@ class SolarOOMDP(OOMDP):
         for element in itertools.product(ns, ew):
             new_action = str(element[0] + "," + element[1])
             actions.append(new_action)
-        print(actions)
 
         return actions
 
