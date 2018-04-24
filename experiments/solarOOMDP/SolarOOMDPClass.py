@@ -101,6 +101,7 @@ class SolarOOMDP(OOMDP):
         for element in itertools.product(ns, ew):
             new_action = str(element[0] + "," + element[1])
             actions.append(new_action)
+        print(actions)
 
         return actions
 
@@ -235,12 +236,11 @@ class SolarOOMDP(OOMDP):
 
         reward = (reward) / 1000000.0 # Convert Watts to Megawatts
 
-        if "energy" in self.name_ext:
-            e_d, e_f, e_r = e_d / 1000000.0, e_f / 1000000.0, e_r / 1000000.0
-            return reward, e_d, e_f, e_r
+        # if "energy" in self.name_ext:
+        #     e_d, e_f, e_r = e_d / 1000000.0, e_f / 1000000.0, e_r / 1000000.0
+        #     return reward, e_d, e_f, e_r
 
         return reward
-
 
 
     def _compute_flux(self, sun_altitude_deg, sun_azimuth_deg, panel_ns_deg, panel_ew_deg, breakdown=False):        

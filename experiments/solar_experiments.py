@@ -13,7 +13,7 @@ import argparse
 
 # Other imports.
 from simple_rl.run_experiments import run_agents_on_mdp
-from simple_rl.agents import RandomAgent, FixedPolicyAgent, LinearQAgent, LinearSarsaAgent, LinUCBAgent, QLearningAgent
+from simple_rl.agents import RandomAgent, FixedPolicyAgent, LinearQAgent, LinUCBAgent, QLearningAgent
 from solarOOMDP.SolarOOMDPClass import SolarOOMDP
 from SolarTrackerClass import SolarTracker
 from solarOOMDP.PanelClass import Panel
@@ -154,14 +154,14 @@ def _setup_agents(solar_mdp):
     rand_init = True
     num_features = solar_mdp.get_num_state_feats()
     lin_ucb_agent = LinUCBAgent(solar_mdp.get_bandit_actions(), context_size=num_features, name="lin-ucb", rand_init=rand_init, alpha=2.0)
-    sarsa_agent_g0 = LinearSarsaAgent(actions, num_features=num_features, name="sarsa-lin-g0", rand_init=rand_init, alpha=alpha, epsilon=epsilon, gamma=0, rbf=False, anneal=True)
-    sarsa_agent = LinearSarsaAgent(actions, num_features=num_features, name="sarsa-lin", rand_init=rand_init, alpha=alpha, epsilon=epsilon, gamma=gamma, rbf=False, anneal=True)
+    # sarsa_agent_g0 = LinearSarsaAgent(actions, num_features=num_features, name="sarsa-lin-g0", rand_init=rand_init, alpha=alpha, epsilon=epsilon, gamma=0, rbf=False, anneal=True)
+    # sarsa_agent = LinearSarsaAgent(actions, num_features=num_features, name="sarsa-lin", rand_init=rand_init, alpha=alpha, epsilon=epsilon, gamma=gamma, rbf=False, anneal=True)
     ql_agent = QLearningAgent(actions, alpha=alpha, epsilon=epsilon, gamma=gamma)
     random_agent = RandomAgent(actions)
     
     # Regular experiments.
     # agents = [lin_ucb_agent, sarsa_agent, sarsa_agent_g0, grena_tracker_agent, static_agent]
-    agents = [lin_ucb_agent, grena_tracker_agent, static_agent]
+    agents = [grena_tracker_agent, static_agent]
 
     return agents
 
@@ -204,7 +204,7 @@ def parse_args():
 
 def main():
 
-    # Paper experiments:
+    # Experiments from IAAI paper:
         # num_days = 1
         # time_per_step = 10 for single axis, 20 for dual.
         # panel_step = 5, dual: 20
@@ -221,18 +221,16 @@ def main():
     panel_step = 10 if not dual_axis else 20
     reflective_index = 0.55
 
-    # Set num episodes.
+    # Set experiment # episodes and # instances.
     episodes = 1 if not dual_axis else 100
     episodes = 1 if num_days == 365 else episodes
     instances = 50
 
-    energy_breakdown_experiment = True
-
     # If per hour is true, plots every hour long reward chunk, otherwise every day.
     rew_step_count = (steps / num_days ) / 24 if per_hour else (steps / num_days)
-    sun_agents, sun_solar_mdp = setup_experiment(percept_type=percept_type, loc=loc, dual_axis=dual_axis, panel_step=panel_step, time_per_step=time_per_step, reflective_index=reflective_index, energy_breakdown_experiment=energy_breakdown_experiment, instances=instances)
+    sun_agents, sun_solar_mdp = setup_experiment(percept_type=percept_type, loc=loc, dual_axis=dual_axis, panel_step=panel_step, time_per_step=time_per_step, reflective_index=reflective_index, instances=instances)
 
-    # # Run experiments.
+    # Run experiments.
     run_agents_on_mdp(sun_agents, sun_solar_mdp, instances=instances, episodes=episodes, steps=steps, clear_old_results=True, rew_step_count=rew_step_count, verbose=True)
 
 if __name__ == "__main__":

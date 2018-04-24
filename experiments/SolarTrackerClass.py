@@ -31,28 +31,21 @@ class SolarTracker(object):
             (str): Action in the set SolarOOMDPClass.ACTIONS
         '''
 
-        # Compute sun vec.
+        # Compute sun vec and initial panel vec.
         sun_alt, sun_az = self.tracker(state)
-
         sun_vec = sh._compute_sun_vector(sun_alt, sun_az)
         panel_ew, panel_ns = state.get_panel_angle_ew(), state.get_panel_angle_ns()
-
-        # Placeholder vars.
+        best_action = sh._compute_panel_normal_vector(panel_ns, panel_ew)
         max_cos_sim = float("-inf")
-        best_action = "do_nothing"
-
-        ns_for_effect = 0 if panel_ns ==  90 else self.panel_step
-        ns_back_effect = 0 if panel_ns == -90 else -self.panel_step
-        ew_for_effect = 0 if panel_ew == 90 else self.panel_step
-        ew_back_effect = 0 if panel_ew  == -90 else -self.panel_step
-
-        panel_vec = sh._compute_panel_normal_vector(panel_ns, panel_ew)
 
         # Find action that minimizes cos difference to estimate of sun vector.
         for action in self.actions:
-            panel_vec = action #sh._compute_panel_normal_vector(panel_ns + delta_alt, panel_ew + delta_az)
 
-            cos_sim = np.dot(sun_vec, panel_vec)
+            # Grab new normal vector.
+            new_panel_ns, new_panel_ew = [float(x) for x in action.split(",")]
+            new_panel_normal_vec = sh._compute_panel_normal_vector(new_panel_ns, new_panel_ew)
+            
+            cos_sim = np.dot(sun_vec, new_panel_normal_vec)
             if cos_sim > max_cos_sim:
                 best_action = action
                 max_cos_sim = cos_sim
